@@ -277,7 +277,6 @@ var GameBoard = function() {
     });
   };
 
-
 };
 
 var Sprite = function() { };
