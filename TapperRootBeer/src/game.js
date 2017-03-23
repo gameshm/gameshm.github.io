@@ -65,13 +65,24 @@ var playGame = function() {
 
   var boardPlayer = new GameBoard();
   boardPlayer.add(new Player());
+  boardPlayer.add(new DeadZone(90, 90, 20, 50));
+  boardPlayer.add(new DeadZone(58, 185, 20, 50));
+  boardPlayer.add(new DeadZone(26, 281, 20, 50));
+  boardPlayer.add(new DeadZone(-4, 377, 20, 50));
+
+  boardPlayer.add(new DeadZone(325, 90, 20, 50));
+  boardPlayer.add(new DeadZone(357, 185, 20, 50));
+  boardPlayer.add(new DeadZone(389, 281, 20, 50));
+  boardPlayer.add(new DeadZone(421, 377, 20, 50));
 
   var boardPared = new GameBoard();
   boardPared.add(new ParedIzda());
 
+
   Game.setBoard(1, boardBG);
   Game.setBoard(2, boardPlayer);
-  Game.setBoard(3, boardPared);
+  //Game.setBoard(3, boardPared);
+  Game.setBoard(2, boardDeadZones);
   /*
   var board = new GameBoard();
   board.add(new PlayerShip()); // Añade los objetos al array objects de GameBoard
@@ -99,6 +110,17 @@ var ParedIzda = function(){
 }
 
 ParedIzda.prototype = new Sprite();
+
+
+/*
+  Spawner(y, delay, nClientes, t, Cliente)
+    sp1 [_________]
+     sp2 [_________]
+      sp3 [_________]
+       sp4 [_________]
+
+  Object.create(cliente)
+*/
 
 var Background = function(){
   this.setup('TapperGameplay', {x: 0, y: 0});
@@ -178,8 +200,16 @@ function levelToSpeed(y){
   }
 }
 
+function levelToCoordenates(j){
+  switch(j){
+    case 1: return {x: 90, y: 90};
+    case 2: return {x: 58, y: 185};
+    case 3: return {x: 26, y: 281};
+    case 4: return {x: -4, y: 377};
+  }
+}
 var Client = function(x, y){
-  this.x = 0;
+  this.x = x;
   this.y = y-10;
   var speed = levelToSpeed(y);
   this.setup('NPC', {vx: -speed}); // 50, 65, 81, 96 
@@ -271,8 +301,24 @@ var Player = function(){
 Player.prototype = new Sprite();
 Player.prototype.type = OBJECT_PLAYER;
 
-var DeadZone = function(x, y){
-  
+var DeadZone = function(x, y, w, h){
+  this.x = x;
+  this.y = y;
+  this.w = w;
+  this.h = h;
+
+  this.draw = function(){
+    var c = document.getElementById("game");
+    var ctx = c.getContext("2d");
+    //ctx.moveTo(0,0);
+    ctx.fillStyle = "#FF0000";
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.stroke();
+  }
+
+  this.step = function(){
+
+  }
 }
 
 var PlayerShip = function() { 
