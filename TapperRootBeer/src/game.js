@@ -36,7 +36,6 @@ var playGame = function() {
   boardPlayer=loadDeadZones(boardPlayer);
 
   Game.setBoard(1, boardBG);
-  console.log(boardPlayer);
   Game.setBoard(2, boardPlayer);
   Game.setBoard(3, boardPared);
 
@@ -247,7 +246,6 @@ function levelToCoordenates(j){
 };
 
 function CoordenatesToCoordenates(y){
-  console.log(y);
   switch(y){
     case 89: return 110;
     case 185: return 78;
