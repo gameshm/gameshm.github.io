@@ -1,4 +1,5 @@
 ///////////////////////////////Ini////////////////////////////////////
+
 var sprites = {
   Beer: {sx: 512, sy: 99, w: 23, h: 32, frames: 1},
   Glass: {sx: 512, sy: 131, w: 23, h: 32, frames: 1},
@@ -8,19 +9,18 @@ var sprites = {
   TapperGameplay: {sx: 0, sy: 480, w: 512, h: 480, frames: 1}
 };
 
-var OBJECT_PLAYER = 1,
-    OBJECT_PLAYER_BEER = 2,
-    OBJECT_CLIENT = 4,
-    OBJECT_DEADZONE = 5;
+var OBJECT_PLAYER = 2,
+    OBJECT_PLAYER_BEER = 4,
+    OBJECT_PLAYER_GLASS = 8, // Añadido GLASS para las colisiones glass - deadzone (gameover)
+    OBJECT_CLIENT = 16,
+    OBJECT_DEADZONE = 32;
 
-var speed = {first: 50, second: 65, third: 81, fourth: 96};    
-
-var zones={
-    0:{x:0  , y:0},
-    1:{x:325, y:90},
-    2:{x:357, y:185},
-    3:{x:389, y:281},
-    4:{x:421, y:377}
+var zones={ // xM -> mirrored position for x-axis
+    initial: {x: 0, y: 0},
+    3:{x: 325, xM: 110, y: 89, speed: 49},
+    2:{x: 357, xM: 78, y: 185, speed: 65},
+    1:{x: 389, xM: 46, y: 281, speed: 81},
+    0:{x: 421, xM: 24, y: 377, speed: 96}
   };
 
 ///////////////////////////////GameLogic///////////////////////////////
@@ -40,7 +40,6 @@ var playGame = function() {
   Game.setBoard(3, boardPared);
 
 };
-
 
 var winGame = function() {
   Game.setBoard(3,new TitleScreen("You win!", 
@@ -71,28 +70,23 @@ var loseGame = function() {
 /////Background/////
 
 var Background = function(){
-  this.setup('TapperGameplay', zones[0]);
+  this.setup('TapperGameplay', zones["initial"]);
   this.step = function(){};
 };
 
 Background.prototype = new Sprite();
 
+
 /////Client/////
 
-var Client = function(x, y){
-  this.x = x;
-  this.y = y-10;
-  var speed = levelToSpeed(y);
+var Client = function(counter){
+  this.counter = counter;
+  this.x = zones[counter].xM;
+  this.y = zones[counter].y-10;
+  var speed = zones[counter].speed;
   this.setup('NPC', {vx: -speed}); // 50, 65, 81, 96 
   this.step = function(dt){
     this.x = this.x - this.vx*dt;
-    /*var collision = this.board.collide(this, OBJECT_PLAYER_BEER);
-    if(collision) {
-      // Devolver pasta
-      this.board.remove(this);
-    } /*else if(this.x < 0) { 
-        this.board.remove(this); 
-    }*/
   };
 };
 Client.prototype = new Sprite();
@@ -100,31 +94,34 @@ Client.prototype.type = OBJECT_CLIENT;
 
 /////Beer/////
 
-var Beer = function(x, y, type){
-  this.x = x;
-  this.y = y;
+var Beer = function(counter, type){
+  this.x = zones[counter].x - sprites.Beer.w;
+  this.y = zones[counter].y;
+  this.counter = counter;
   this.t = type;
-  var speed = levelToSpeed(y);
+  var speed = zones[counter].speed;
   
   this.setup(type, {vx: speed}); // 50, 65, 81, 96 
   
-   this.step = function(dt){
+  this.step = function(dt){
     if(this.t == 'Beer'){
       this.x = this.x - this.vx*dt; 
       var collision = this.board.collide(this, OBJECT_CLIENT);
       
       if(collision.type==OBJECT_CLIENT) {
-        // Cambiar el sprite por la jarra vacía y lanzarla hacia el otro lado
         this.t = 'Glass';
         this.setup('Glass', {vx: this.vx - this.vx/4});
+        // Change of .type to GLASS
+        this.type = OBJECT_PLAYER_GLASS;
         this.board.remove(collision);
+        // Leave tip for Player
       }
     }else if(this.t == 'Glass'){
       this.x = this.x + this.vx*dt;
       var collision = this.board.collide(this, OBJECT_PLAYER);
       if(collision.type==OBJECT_PLAYER) {
-        // Cambiar el sprite por la jarra vacía y lanzarla hacia el otro lado
         this.board.remove(this);
+        // Add up points to total score
       }
     } 
   };
@@ -134,43 +131,33 @@ Beer.prototype = new Sprite();
 Beer.prototype.type = OBJECT_PLAYER_BEER;
 
 
-
-
 /////Player/////
 
 var Player = function(){
-  this.setup('Player', {x: 421, y: 377, reloadTime: 3.5});
+  this.setup('Player', {x: 421, y: 377, reloadTime: 0.5});
 
   this.reload = this.reloadTime;
+  this.counter = 0;
 
   this.step = function(dt){
     if(Game.keys['up']){
       Game.keys['up'] = false;
-      this.x -= 32;
-      this.y -= 96;
-      if(this.y < 0){ // Volver abajo
-        this.x = 421;
-        this.y = 377;
-      }
+      this.counter = (this.counter + 1)%4 || 0;
     }
-    else if(Game.keys['down']){
+    else if (Game.keys['down']){
       Game.keys['down'] = false;
-      this.x += 32;
-      this.y += 96;
-      if(this.y > 378){ // Volver arriba
-        this.x = 325;
-        this.y = 89;
-      }
+      this.counter = ((this.counter == 0) ? 3 : this.counter - 1) || 0;
     }
-    
+    this.x = zones[this.counter].x;
+    this.y = zones[this.counter].y;
 
     //this.reload -= dt;
-    if(Game.keys['space'] /*&& this.reload < 0*/){ // Crear cerveza
+    if(Game.keys['space'] /*&& this.reload < 0*/){ // Generate Beer
       Game.keys['space'] = false;
       //this.reload = this.reloadTime;
-      this.board.add(new Beer(this.x - sprites.Beer.w, this.y, 'Beer'));
+      this.board.add(new Beer(this.counter, 'Beer'));
       if(Math.floor((Math.random() * 10) + 1)>5)
-        this.board.add(new Client(CoordenatesToCoordenates(this.y), this.y));
+        this.board.add(new Client(this.counter));
     }
   };
 }
@@ -182,7 +169,7 @@ Player.prototype.type = OBJECT_PLAYER;
 /////ParedIzda/////
 
 var ParedIzda = function(){
-  this.setup('ParedIzda', {x: 0, y: 0});
+  this.setup('ParedIzda', zones["initial"]);
   this.step = function(){};
 };
 
@@ -208,13 +195,20 @@ var DeadZone = function(x, y, w, h){
 
   this.step = function(){
     var beer = this.board.collide(this, OBJECT_PLAYER_BEER);
+    var glass = this.board.collide(this, OBJECT_PLAYER_GLASS); // OBJECT_PLAYER_GLASS added for further implementations (dealing with collisions)
     var client = this.board.collide(this, OBJECT_CLIENT);
 
-    if(beer.type==OBJECT_PLAYER_BEER){
+    if(glass.type==OBJECT_PLAYER_GLASS){
+      this.board.remove(glass);
+      // Game should be over
+    }
+    if(beer.type==OBJECT_PLAYER_BEER){ 
       this.board.remove(beer);
+      // Game should be over
     }    
     if(client.type==OBJECT_CLIENT){
       this.board.remove(client);
+      // Game should be over
     }    
 
   };
@@ -222,35 +216,8 @@ var DeadZone = function(x, y, w, h){
 
 DeadZone.prototype.type=OBJECT_DEADZONE;
 
+
 //////////////////////////////Aux/////////////////////////////////
-
-function levelToSpeed(y){
-  switch(y){
-    case 89: return 49;
-    case 185: return 65;
-    case 281: return 81;
-    case 377: return 96;
-  }
-};
-
-function levelToCoordenates(j){
-  switch(j){
-    case 1: return {x: 90, y: 90};
-    case 2: return {x: 58, y: 185};
-    case 3: return {x: 26, y: 281};
-    case 4: return {x: -4, y: 377};
-  }
-};
-
-function CoordenatesToCoordenates(y){
-  switch(y){
-    case 89: return 110;
-    case 185: return 78;
-    case 281: return 46;
-    case 377: return 24;
-  }
-};
-
 
 var loadDeadZones=function(boardPlayer){
 
@@ -267,7 +234,6 @@ var loadDeadZones=function(boardPlayer){
   return boardPlayer;
 
 };
-
 
 
 //////////////////////////////Events/////////////////////////////////
