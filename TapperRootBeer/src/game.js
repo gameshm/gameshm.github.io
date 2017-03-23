@@ -38,14 +38,8 @@ var playGame = function() {
   Game.setBoard(1, boardBG);
   console.log(boardPlayer);
   Game.setBoard(2, boardPlayer);
-  //Game.setBoard(3, boardPared);
-  /*
-  var board = new GameBoard();
-  board.add(new PlayerShip()); // Añade los objetos al array objects de GameBoard
-  board.add(new Level(level1,winGame));
-  Game.setBoard(3,board);
-  Game.setBoard(5,new GamePoints(0));
-  */
+  Game.setBoard(3, boardPared);
+
 };
 
 
@@ -115,6 +109,7 @@ var Beer = function(x, y, type){
   
   this.setup(type, {vx: speed}); // 50, 65, 81, 96 
   
+   this.step = function(dt){
     if(this.t == 'Beer'){
       this.x = this.x - this.vx*dt; 
     /*  var collision = this.board.collide(this, OBJECT_CLIENT);
@@ -135,12 +130,16 @@ var Beer = function(x, y, type){
         this.board.remove(this);
       } else if(this.x < 0) { 
           this.board.remove(this); 
-    } 
+      }
+    */} 
   };
 };
 
 Beer.prototype = new Sprite();
 Beer.prototype.type = OBJECT_PLAYER_BEER;
+
+
+
 
 /////Player/////
 
@@ -175,6 +174,7 @@ var Player = function(){
       Game.keys['space'] = false;
       //this.reload = this.reloadTime;
       this.board.add(new Beer(this.x - sprites.Beer.w, this.y, 'Beer'));
+      this.board.add(new Client(CoordenatesToCoordenates(this.y), this.y));
     }
   };
 }
@@ -201,11 +201,13 @@ var DeadZone = function(x, y, w, h){
   this.h = h;
 
   this.draw = function(){
+    /*
     var c = document.getElementById("game");
     var ctx = c.getContext("2d");
     ctx.fillStyle = "#FF0000";
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.stroke();
+    */
   };
 
   this.step = function(){
@@ -244,7 +246,10 @@ function levelToCoordenates(j){
   }
 };
 
+function CoordenatesToCoordenates(y){
+  console.log(y);
   switch(y){
+    case 89: return 110;
     case 185: return 78;
     case 281: return 46;
     case 377: return 24;
