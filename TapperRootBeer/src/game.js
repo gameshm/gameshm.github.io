@@ -115,7 +115,6 @@ var Beer = function(x, y, type){
   
   this.setup(type, {vx: speed}); // 50, 65, 81, 96 
   
-  this.step = function(dt){
     if(this.t == 'Beer'){
       this.x = this.x - this.vx*dt; 
     /*  var collision = this.board.collide(this, OBJECT_CLIENT);
@@ -136,7 +135,6 @@ var Beer = function(x, y, type){
         this.board.remove(this);
       } else if(this.x < 0) { 
           this.board.remove(this); 
-      }*/
     } 
   };
 };
@@ -177,7 +175,6 @@ var Player = function(){
       Game.keys['space'] = false;
       //this.reload = this.reloadTime;
       this.board.add(new Beer(this.x - sprites.Beer.w, this.y, 'Beer'));
-      //this.board.add(new Client(0, this.y));
     }
   };
 }
@@ -247,6 +244,12 @@ function levelToCoordenates(j){
   }
 };
 
+  switch(y){
+    case 185: return 78;
+    case 281: return 46;
+    case 377: return 24;
+  }
+};
 
 
 var loadDeadZones=function(boardPlayer){
