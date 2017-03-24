@@ -9,7 +9,6 @@ var sprites = {
   TapperGameplay: {sx: 0, sy: 480, w: 512, h: 480, frames: 1}
 };
 
-
 var OBJECT_PLAYER = 2,
     OBJECT_PLAYER_BEER = 4,
     OBJECT_PLAYER_GLASS = 8, // Añadido GLASS para las colisiones glass - deadzone (gameover)
@@ -72,19 +71,33 @@ var loseGame = function() {
 //////////////////////////////Objects//////////////////////////////////
 
 /////Spawner/////
+var lastClient;
 
 var Spawner=function(bar, number, type, frecuency, delay){
-  this.bar=bar;
-  this.number=number;
+  this.n=0;
   this.type=type;
-  this.frecuency=frecuency;
-  this.delay=delay;
+  this.lastTime = new Date().getTime();
+  this.curTime;
+
 };
+Spawner.prototype.client=new Client(bar);
 Spawner.prototype.draw=function(){};
 Spawner.prototype.step=function(){
-  
-  var c=new Client(zones[this.bar[ini]]);
-  Object.create(c);
+  this.curTime = new Date().getTime();
+
+  var dt = (this.curTime - this.lastTime)/1000;
+  var last= (this.curTime - lastClient)/1000;
+
+  if(dt>frecuency && last>delay && this.n<number){
+    
+    var c=Object.create(this.client);
+    this.board.add(c);
+    
+    this.lastTime = new Date().getTime();
+    lastClient = new Date().getTime();
+    this.n++;
+  }
+
 
 };
 
