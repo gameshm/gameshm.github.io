@@ -21,8 +21,17 @@ var zones={ // xM -> mirrored position for x-axis
     2:{x: 357, xM: 78, y: 185, speed: 65},
     1:{x: 389, xM: 46, y: 281, speed: 81},
     0:{x: 421, xM: 24, y: 377, speed: 96}
+  };
 
-var speed = {first: 50, second: 65, third: 81, fourth: 96};    
+var level1 = [
+// Start, Number, Type, Override
+
+[ 0, 5, 'NFC'],
+[ 6000, 2, 'NFC'],
+[ 12000, 3, 'NFC'],
+[ 18200, 4, 'NFC'],
+
+];
 
 
 ///////////////////////////////GameLogic///////////////////////////////
@@ -70,33 +79,50 @@ var loseGame = function() {
 
 //////////////////////////////Objects//////////////////////////////////
 
+
+var Level=function(levelData, callback){
+  this.t=0;
+  this.levelData=[];
+  for(var i=0; i<levelData.length;i++){
+    this.levelData.push(levelData[i]);
+  }
+  this.callback=callback;
+};
+Level.prototype.step=function(dt){
+
+  var idx=0, curCounter=null;
+  this.t+=dt*1000;
+
+ while((curCounter=this.levelData[idx]) && curCounter[0]<this.t){
+
+    new Spawner(3, 1, "NFC", 1, 1);
+  }
+  
+};
+
+Level.prototype.draw=function(ctx){};
+
+
 /////Spawner/////
-var lastClient;
+var lastClient=-1;
 
 var Spawner=function(bar, number, type, frecuency, delay){
   this.n=0;
+  this.number=number;
+  this.frecuency=frecuency;
+  this.delay=delay;
+  this.bar=bar;
   this.type=type;
-  this.lastTime = new Date().getTime();
-  this.curTime;
-
+  this.cliente=new Client(bar);
+  this.t=0;
 };
-Spawner.prototype.client=new Client(bar);
+
 Spawner.prototype.draw=function(){};
-Spawner.prototype.step=function(){
-  this.curTime = new Date().getTime();
+Spawner.prototype.step=function(dt){
+  this.t+=dt*1000;
 
-  var dt = (this.curTime - this.lastTime)/1000;
-  var last= (this.curTime - lastClient)/1000;
-
-  if(dt>frecuency && last>delay && this.n<number){
-    
-    var c=Object.create(this.client);
-    this.board.add(c);
-    
-    this.lastTime = new Date().getTime();
-    lastClient = new Date().getTime();
-    this.n++;
-  }
+  if(this.t>this.delay)
+   this.board.add(this.cliente);
 
 
 };
@@ -187,10 +213,10 @@ var Player = function(){
     this.x = zones[this.counter].x;
     this.y = zones[this.counter].y;
 
-    //this.reload -= dt;
-    if(Game.keys['space'] /*&& this.reload < 0*/){ // Generate Beer
+    this.reload -= dt;
+    if(Game.keys['space'] && this.reload < 0){ // Generate Beer
       Game.keys['space'] = false;
-      //this.reload = this.reloadTime;
+      this.reload = this.reloadTime;
       this.board.add(new Beer(this.counter, 'Beer'));
       if(Math.floor((Math.random() * 10) + 1)>5)
         this.board.add(new Client(this.counter));
@@ -267,12 +293,6 @@ var loadDeadZones=function(boardPlayer){
 
 };
 
-var loadSpawns=function(boardPlayer){
-  //boardPlayer.add(new Spawner());
-
-
-  return boardPlayer;
-};
 
 //////////////////////////////Events///////////////////////////////////
 
