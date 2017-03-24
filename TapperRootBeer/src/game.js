@@ -9,6 +9,7 @@ var sprites = {
   TapperGameplay: {sx: 0, sy: 480, w: 512, h: 480, frames: 1}
 };
 
+<<<<<<< Updated upstream
 var OBJECT_PLAYER = 2,
     OBJECT_PLAYER_BEER = 4,
     OBJECT_PLAYER_GLASS = 8, // Añadido GLASS para las colisiones glass - deadzone (gameover)
@@ -21,6 +22,20 @@ var zones={ // xM -> mirrored position for x-axis
     2:{x: 357, xM: 78, y: 185, speed: 65},
     1:{x: 389, xM: 46, y: 281, speed: 81},
     0:{x: 421, xM: 24, y: 377, speed: 96}
+=======
+var OBJECT_PLAYER = 1,
+    OBJECT_PLAYER_BEER = 2,
+    OBJECT_CLIENT = 4,
+    OBJECT_DEADZONE = 5;
+
+var speed = {first: 50, second: 65, third: 81, fourth: 96};    
+
+var zones={
+    1:{ini:{x:110, y:90},fin:{x:325, y:90}},
+    2:{ini:{x:78, y:185},fin:{x:357, y:185}},
+    3:{ini:{x:46, y:281},fin:{x:389, y:281}},
+    4:{ini:{x:24, y:377},fin:{x:421, y:377}}
+>>>>>>> Stashed changes
   };
 
 ///////////////////////////////GameLogic///////////////////////////////
@@ -34,6 +49,7 @@ var playGame = function() {
   boardPared.add(new ParedIzda());
   boardPlayer.add(new Player());
   boardPlayer=loadDeadZones(boardPlayer);
+  boardPlayer=loadSpawns(boardPlayer);
 
   Game.setBoard(1, boardBG);
   Game.setBoard(2, boardPlayer);
@@ -67,10 +83,31 @@ var loseGame = function() {
 
 //////////////////////////////Objects///////////////////////////////
 
+/////Spawner/////
+
+var Spawner=function(bar, number, type, frecuency, delay){
+  this.bar=bar;
+  this.number=number;
+  this.type=type;
+  this.frecuency=frecuency;
+  this.delay=delay;
+};
+Spawner.prototype.draw=function(){};
+Spawner.prototype.step=function(){
+  
+  var c=new Client(zones[this.bar[ini]]);
+  Object.create(c);
+
+};
+
 /////Background/////
 
 var Background = function(){
+<<<<<<< Updated upstream
   this.setup('TapperGameplay', zones["initial"]);
+=======
+  this.setup('TapperGameplay', {x:0, y:0});
+>>>>>>> Stashed changes
   this.step = function(){};
 };
 
@@ -182,18 +219,15 @@ var DeadZone = function(x, y, w, h){
   this.y = y;
   this.w = w;
   this.h = h;
-
-  this.draw = function(){
-    /*
+ /* draw()
     var c = document.getElementById("game");
     var ctx = c.getContext("2d");
     ctx.fillStyle = "#FF0000";
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.stroke();
-    */
-  };
-
-  this.step = function(){
+  */
+};
+DeadZone.prototype.step=function(){
     var beer = this.board.collide(this, OBJECT_PLAYER_BEER);
     var glass = this.board.collide(this, OBJECT_PLAYER_GLASS); // OBJECT_PLAYER_GLASS added for further implementations (dealing with collisions)
     var client = this.board.collide(this, OBJECT_CLIENT);
@@ -210,10 +244,8 @@ var DeadZone = function(x, y, w, h){
       this.board.remove(client);
       // Game should be over
     }    
-
-  };
 };
-
+DeadZone.prototype.draw=function(){};
 DeadZone.prototype.type=OBJECT_DEADZONE;
 
 
@@ -235,7 +267,16 @@ var loadDeadZones=function(boardPlayer){
 
 };
 
+var loadSpawns=function(boardPlayer){
+  //boardPlayer.add(new Spawner());
 
+
+<<<<<<< Updated upstream
+=======
+  return boardPlayer;
+};
+
+>>>>>>> Stashed changes
 //////////////////////////////Events/////////////////////////////////
 
 window.addEventListener("load", function() {
