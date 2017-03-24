@@ -69,7 +69,7 @@ var loseGame = function() {
 
 
 
-//////////////////////////////Objects///////////////////////////////
+//////////////////////////////Objects//////////////////////////////////
 
 /////Spawner/////
 
@@ -91,11 +91,9 @@ Spawner.prototype.step=function(){
 /////Background/////
 
 var Background = function(){
-<<<<<<< Updated upstream
+
   this.setup('TapperGameplay', zones["initial"]);
-=======
-  this.setup('TapperGameplay', {x:0, y:0});
->>>>>>> Stashed changes
+
   this.step = function(){};
 };
 
@@ -133,7 +131,7 @@ var Beer = function(counter, type){
       this.x = this.x - this.vx*dt; 
       var collision = this.board.collide(this, OBJECT_CLIENT);
       
-      if(collision.type==OBJECT_CLIENT) {
+      if(collision) {
         this.t = 'Glass';
         this.setup('Glass', {vx: this.vx - this.vx/4});
         // Change of .type to GLASS
@@ -144,7 +142,7 @@ var Beer = function(counter, type){
     }else if(this.t == 'Glass'){
       this.x = this.x + this.vx*dt;
       var collision = this.board.collide(this, OBJECT_PLAYER);
-      if(collision.type==OBJECT_PLAYER) {
+      if(collision) {
         this.board.remove(this);
         // Add up points to total score
       }
@@ -207,7 +205,8 @@ var DeadZone = function(x, y, w, h){
   this.y = y;
   this.w = w;
   this.h = h;
- /* draw()
+ /* 
+    draw()
     var c = document.getElementById("game");
     var ctx = c.getContext("2d");
     ctx.fillStyle = "#FF0000";
@@ -220,15 +219,15 @@ DeadZone.prototype.step=function(){
     var glass = this.board.collide(this, OBJECT_PLAYER_GLASS); // OBJECT_PLAYER_GLASS added for further implementations (dealing with collisions)
     var client = this.board.collide(this, OBJECT_CLIENT);
 
-    if(glass.type==OBJECT_PLAYER_GLASS){
+    if(glass){
       this.board.remove(glass);
       // Game should be over
     }
-    if(beer.type==OBJECT_PLAYER_BEER){ 
+    if(beer){ 
       this.board.remove(beer);
       // Game should be over
     }    
-    if(client.type==OBJECT_CLIENT){
+    if(client){
       this.board.remove(client);
       // Game should be over
     }    
@@ -237,7 +236,7 @@ DeadZone.prototype.draw=function(){};
 DeadZone.prototype.type=OBJECT_DEADZONE;
 
 
-//////////////////////////////Aux/////////////////////////////////
+//////////////////////////////Aux//////////////////////////////////////
 
 var loadDeadZones=function(boardPlayer){
 
@@ -259,13 +258,10 @@ var loadSpawns=function(boardPlayer){
   //boardPlayer.add(new Spawner());
 
 
-<<<<<<< Updated upstream
-=======
   return boardPlayer;
 };
 
->>>>>>> Stashed changes
-//////////////////////////////Events/////////////////////////////////
+//////////////////////////////Events///////////////////////////////////
 
 window.addEventListener("load", function() {
   Game.initialize("game",sprites,playGame);
