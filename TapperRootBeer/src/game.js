@@ -26,10 +26,10 @@ var zones={ // xM -> mirrored position for x-axis
 var level1 = [
 // Start, Number, Type, Override
 
-[ 0, 5, 'NFC'],
-[ 6000, 2, 'NFC'],
-[ 12000, 3, 'NFC'],
-[ 18200, 4, 'NFC'],
+[ 0, 5, 'NFC', 2000],
+[ 6000, 2, 'NFC', 3000],
+[ 12000, 3, 'NFC', 4000],
+[ 18200, 4, 'NFC', 5000]
 
 ];
 
@@ -45,7 +45,17 @@ var playGame = function() {
   boardPared.add(new ParedIzda());
   boardPlayer.add(new Player());
   boardPlayer=loadDeadZones(boardPlayer);
-  boardPlayer=loadSpawns(boardPlayer);
+  
+  //boardPlayer.add(new Level(level1));
+  var bar0=level1[0];
+  boardPlayer.add(new Spawner(0, bar0[1], bar0[2], bar0[3], 0));
+  var bar1=level1[1];
+  boardPlayer.add(new Spawner(1, bar1[1], bar1[1], bar1[1], 1000));
+  var bar2=level1[2];
+  boardPlayer.add(new Spawner(2, bar2[1], bar2[2], bar2[3], 2000));
+  var bar3=level1[3];
+  boardPlayer.add(new Spawner(3, bar3[1], bar3[2], bar3[3], 3000));
+
 
   Game.setBoard(1, boardBG);
   Game.setBoard(2, boardPlayer);
@@ -80,26 +90,27 @@ var loseGame = function() {
 //////////////////////////////Objects//////////////////////////////////
 
 
-var Level=function(levelData, callback){
+var Level=function(levelData){
   this.t=0;
   this.levelData=[];
+
   for(var i=0; i<levelData.length;i++){
     this.levelData.push(levelData[i]);
   }
-  this.callback=callback;
+
 };
 Level.prototype.step=function(dt){
+    this.t=dt*1000;
 
-  var idx=0, curCounter=null;
-  this.t+=dt*1000;
+    for(var i=0; i<this.levelData.length; i++){
+      var counter=this.levelData[0];
 
- while((curCounter=this.levelData[idx]) && curCounter[0]<this.t){
+      if(counter[0]<this.t)
+        this.board.add(new Spawner(i, counter[1], counter[2],counter[3], i*1000));
 
-    new Spawner(3, 1, "NFC", 1, 1);
   }
-  
-};
 
+};
 Level.prototype.draw=function(ctx){};
 
 
@@ -115,15 +126,23 @@ var Spawner=function(bar, number, type, frecuency, delay){
   this.type=type;
   this.cliente=new Client(bar);
   this.t=0;
+  this.last=0;
+  console.log(bar);
 };
 
 Spawner.prototype.draw=function(){};
 Spawner.prototype.step=function(dt){
   this.t+=dt*1000;
 
-  if(this.t>this.delay)
-   this.board.add(this.cliente);
+  if(!this.last)
+    this.last=this.t;
 
+  if(this.t>this.delay && this.n!=this.number && this.frecuency<(this.t-this.last)){
+   var c=Object.create(this.cliente);
+   this.board.add(c);
+   this.n++;
+   this.last=this.t;
+  }
 
 };
 
@@ -218,8 +237,8 @@ var Player = function(){
       Game.keys['space'] = false;
       this.reload = this.reloadTime;
       this.board.add(new Beer(this.counter, 'Beer'));
-      if(Math.floor((Math.random() * 10) + 1)>5)
-        this.board.add(new Client(this.counter));
+      //if(Math.floor((Math.random() * 10) + 1)>5)
+        //this.board.add(new Client(this.counter));
     }
   };
 }
