@@ -26,10 +26,10 @@ var zones={ // xM -> mirrored position for x-axis
 var level1 = [
 // Start, Number, Type, Override
 
-[ 0, 2, 'NFC', 500],
-[ 3000, 2, 'NFC', 500],
-[ 2000, 2, 'NFC', 500],
-[ 1000, 2, 'NFC', 500]
+[ 0, 1, 'NFC', 500],
+[ 3000, 0, 'NFC', 500],
+[ 2000, 0, 'NFC', 500],
+[ 1000, 0, 'NFC', 500]
 
 ];
 
@@ -60,7 +60,7 @@ var playGame = function() {
   Game.setBoard(1, boardBG);
   Game.setBoard(2, boardPlayer);
   Game.setBoard(3, boardPared);
-
+  Game.setBoard(4, GameManager);
 };
 
 var winGame = function() {
@@ -89,7 +89,57 @@ var loseGame = function() {
 
 //////////////////////////////Objects//////////////////////////////////
 
+/////GameManager/////
 
+var GameManager= new function(){
+  this.clients=0;
+  this.beer=0;
+  this.glass=0;
+  this.initial=true;
+  this.gameover=false;
+
+  this.moreClients=function(n){
+    if(this.initial)this.initial=!this.initial;
+    this.clients+=n;
+  };
+  this.lessClients=function(){
+    this.clients--;
+  };
+  this.moreBeer=function(){
+    this.beer++;
+  };
+  this.lessBeer=function(){
+    this.beer--;
+  };
+  this.moreGlass=function(){
+    this.glass++;
+  };
+  this.lessGlass=function(){
+    this.glass--;
+  };
+
+  this.win=function(){
+    return (this.initial==false) && (this.glass==0) && (this.clients==0);
+  };
+
+  this.loose=function(){
+    this.gameover=true;
+  }
+  this.draw=function(){};
+  this.step=function(dt){
+    
+    if(this.win()){
+      console.log("win");
+    }
+    if(this.gameover){
+      console.log("loose");
+      this.gameover=!this.gameover;
+    }
+  };
+
+};
+
+/////Level/////
 var Level=function(levelData){
   this.t=0;
   this.levelData=[];
@@ -127,7 +177,7 @@ var Spawner=function(bar, number, type, frecuency, delay){
   this.cliente=new Client(bar);
   this.t=0;
   this.last=0;
-  console.log(bar);
+  GameManager.moreClients(number);
 };
 
 Spawner.prototype.draw=function(){};
@@ -190,17 +240,21 @@ var Beer = function(counter, type){
       var collision = this.board.collide(this, OBJECT_CLIENT);
       
       if(collision) {
-        this.t = 'Glass';
+        this.t = 'Glass'; 
         this.setup('Glass', {vx: this.vx - this.vx/4});
         // Change of .type to GLASS
         this.type = OBJECT_PLAYER_GLASS;
         this.board.remove(collision);
         // Leave tip for Player
+        GameManager.lessBeer();
+        GameManager.lessClients();
+        GameManager.moreGlass();
       }
     }else if(this.t == 'Glass'){
       this.x = this.x + this.vx*dt;
       var collision = this.board.collide(this, OBJECT_PLAYER);
       if(collision) {
+        GameManager.lessGlass();
         this.board.remove(this);
         // Add up points to total score
       }
@@ -237,6 +291,7 @@ var Player = function(){
       Game.keys['space'] = false;
       this.reload = this.reloadTime;
       this.board.add(new Beer(this.counter, 'Beer'));
+      GameManager.moreBeer();
       //if(Math.floor((Math.random() * 10) + 1)>5)
         //this.board.add(new Client(this.counter));
     }
@@ -273,22 +328,15 @@ var DeadZone = function(x, y, w, h){
   */
 };
 DeadZone.prototype.step=function(){
-    var beer = this.board.collide(this, OBJECT_PLAYER_BEER);
-    var glass = this.board.collide(this, OBJECT_PLAYER_GLASS); // OBJECT_PLAYER_GLASS added for further implementations (dealing with collisions)
-    var client = this.board.collide(this, OBJECT_CLIENT);
-
-    if(glass){
-      this.board.remove(glass);
-      // Game should be over
+    
+    var object = this.board.collide(this, OBJECT_CLIENT | OBJECT_PLAYER_GLASS | OBJECT_PLAYER_BEER);
+  
+    if(object){
+      this.board.remove(object);
+      GameManager.loose();
     }
-    if(beer){ 
-      this.board.remove(beer);
-      // Game should be over
-    }    
-    if(client){
-      this.board.remove(client);
-      // Game should be over
-    }    
+
+
 };
 DeadZone.prototype.draw=function(){};
 DeadZone.prototype.type=OBJECT_DEADZONE;
