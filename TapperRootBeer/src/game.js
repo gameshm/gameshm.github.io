@@ -36,15 +36,46 @@ var level1 = [
 
 ///////////////////////////////GameLogic///////////////////////////////
 
+var startGame = function() {
+  /*
+  var ua = navigator.userAgent.toLowerCase();
+
+  // Only 1 row of stars
+  if(ua.match(/android/)) {
+    Game.setBoard(0,new Starfield(50,0.6,100,true));
+  } else {
+    Game.setBoard(0,new Starfield(20,0.4,100,true));
+    Game.setBoard(1,new Starfield(50,0.6,100));
+    Game.setBoard(2,new Starfield(100,1.0,50));
+  }  
+  */
+  Game.setBoard(0,new TitleScreen("Alien Invasion", 
+                                  "Press fire to start playing",
+                                  playGame));
+};
+
 var playGame = function() {
-  var boardBG = new GameBoard();
+
+  var boardBG = new GameBoard(true);
   boardBG.add(new Background());
 
-  var boardPlayer = new GameBoard();
-  var boardPared = new GameBoard();
+  var boardPlayer = new GameBoard(true);
+  var boardPared = new GameBoard(true);
   boardPared.add(new ParedIzda());
   boardPlayer.add(new Player());
   boardPlayer=loadDeadZones(boardPlayer);
+
+  var boardGameWon = new GameBoard(false);
+  boardGameWon.add(new TitleScreen("You win!", 
+                                  "Press space to play again",
+                                  restart));
+  var boardGameLost = new GameBoard(false);
+  boardGameLost.add(new TitleScreen("You lose!", 
+                                  "Press space to play again",
+                                  restart));
+  Game.setBoard(5, boardGameWon);
+  Game.setBoard(6, boardGameLost);
+
 
   //boardPlayer.add(new Level(level1));
   var bar0=level1[0];
@@ -61,18 +92,42 @@ var playGame = function() {
   Game.setBoard(2, boardPlayer);
   Game.setBoard(3, boardPared);
   Game.setBoard(4, GameManager);
+  
 };
 
+var restart = function(){
+  Game.setBoardActive(6, false);
+  Game.setBoardActive(5, false);
+
+  Game.setBoardActive(3, true);
+  Game.setBoardActive(2, true);
+  Game.setBoardActive(1, true);
+
+  GameManager.clients=0;
+  GameManager.beer=0;
+  GameManager.glass=0;
+  GameManager.initial=true;
+  GameManager.gameover=false;
+}
+
 var winGame = function() {
-  Game.setBoard(3,new TitleScreen("You win!", 
-                                  "Press fire to play again",
-                                  playGame));
+  Game.setBoardActive(6, false);
+  Game.setBoardActive(5, true);
+
+  //Game.setBoardActive(4, false);
+  Game.setBoardActive(3, false);
+  Game.setBoardActive(2, false);
+  Game.setBoardActive(1, false);
 };
 
 var loseGame = function() {
-  Game.setBoard(3,new TitleScreen("You lose!", 
-                                  "Press fire to play again",
-                                  playGame));
+  Game.setBoardActive(6, true);
+  Game.setBoardActive(5, false);
+
+  //Game.setBoardActive(4, true);
+  Game.setBoardActive(3, true);
+  Game.setBoardActive(2, true);
+  Game.setBoardActive(1, true);
 };
 
 /*
@@ -97,6 +152,8 @@ var GameManager= new function(){
   this.glass=0;
   this.initial=true;
   this.gameover=false;
+
+  
 
   this.moreClients=function(n){
     if(this.initial)this.initial=!this.initial;
@@ -129,11 +186,13 @@ var GameManager= new function(){
   this.step=function(dt){
     
     if(this.win()){
-      console.log("win");
+      //console.log("win");
+      winGame();
     }
     if(this.gameover){
-      console.log("loose");
+      //console.log("loose");
       this.gameover=!this.gameover;
+      loseGame();
     }
   };
 

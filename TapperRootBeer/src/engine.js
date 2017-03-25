@@ -94,7 +94,9 @@ var Game = new function() {
   
   // Change an active game board
   this.setBoard = function(num,board) { boards[num] = board; };
-
+  this.setBoardActive = function(num, active){
+    boards[num].setActive(active);
+  }
 
   this.setupMobile = function() {
     var container = document.getElementById("container"),
@@ -165,8 +167,8 @@ var SpriteSheet = new function() {
 var TitleScreen = function TitleScreen(title,subtitle,callback) {
   var up = false;
   this.step = function(dt) {
-    if(!Game.keys['fire']) up = true;
-    if(up && Game.keys['fire'] && callback) callback();
+    if(!Game.keys['space']) up = true;
+    if(up && Game.keys['space'] && callback) callback();
   };
 
   this.draw = function(ctx) {
@@ -189,12 +191,17 @@ var TitleScreen = function TitleScreen(title,subtitle,callback) {
 };
 
 
-var GameBoard = function() {
+var GameBoard = function(active) {
   var board = this;
 
   // The current list of objects
   this.objects = [];
   this.cnt = {};
+  this.active = active;
+
+  this.setActive = function(active){
+    this.active = active;
+  }
 
   // Add a new object to the object list
   this.add = function(obj) { 
@@ -249,14 +256,18 @@ var GameBoard = function() {
   // Call step on all objects and them delete
   // any object that have been marked for removal
   this.step = function(dt) { 
-    this.resetRemoved();
-    this.iterate('step',dt);
-    this.finalizeRemoved();
+    if(this.active){
+      this.resetRemoved();
+      this.iterate('step',dt);
+      this.finalizeRemoved();
+    }
   };
 
   // Draw all the objects
   this.draw= function(ctx) {
-    this.iterate('draw',ctx);
+    if(this.active){
+     this.iterate('draw',ctx);
+    }
   };
 
   // Check for a collision between the 
