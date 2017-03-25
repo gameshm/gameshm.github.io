@@ -26,10 +26,10 @@ var zones={ // xM -> mirrored position for x-axis
 var level1 = [
 // Start, Number, Type, Override
 
-[ 0, 5, 'NFC', 2000],
-[ 6000, 2, 'NFC', 3000],
-[ 12000, 3, 'NFC', 4000],
-[ 18200, 4, 'NFC', 5000]
+[ 0, 2, 'NFC', 500],
+[ 3000, 2, 'NFC', 500],
+[ 2000, 2, 'NFC', 500],
+[ 1000, 2, 'NFC', 500]
 
 ];
 
@@ -45,16 +45,16 @@ var playGame = function() {
   boardPared.add(new ParedIzda());
   boardPlayer.add(new Player());
   boardPlayer=loadDeadZones(boardPlayer);
-  
+
   //boardPlayer.add(new Level(level1));
   var bar0=level1[0];
-  boardPlayer.add(new Spawner(0, bar0[1], bar0[2], bar0[3], 0));
+  boardPlayer.add(new Spawner(0, bar0[1], bar0[2], bar0[3], bar0[0]));
   var bar1=level1[1];
-  boardPlayer.add(new Spawner(1, bar1[1], bar1[1], bar1[1], 1000));
+  boardPlayer.add(new Spawner(1, bar1[1], bar1[2], bar1[3], bar1[0]));
   var bar2=level1[2];
-  boardPlayer.add(new Spawner(2, bar2[1], bar2[2], bar2[3], 2000));
+  boardPlayer.add(new Spawner(2, bar2[1], bar2[2], bar2[3], bar2[0]));
   var bar3=level1[3];
-  boardPlayer.add(new Spawner(3, bar3[1], bar3[2], bar3[3], 3000));
+  boardPlayer.add(new Spawner(3, bar3[1], bar3[2], bar3[3], bar3[0]));
 
 
   Game.setBoard(1, boardBG);
