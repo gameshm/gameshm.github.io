@@ -14,13 +14,14 @@ var OBJECT_PLAYER = 2,
     OBJECT_PLAYER_GLASS = 8, // Añadido GLASS para las colisiones glass - deadzone (gameover)
     OBJECT_CLIENT = 16,
     OBJECT_DEADZONE = 32;
+    OBJECT_TIP = 64;
 
 var zones={ // xM -> mirrored position for x-axis
     initial: {x: 0, y: 0},
-    3:{x: 325, xM: 110, y: 89, speed: 25, tip: false},
-    2:{x: 357, xM: 78, y: 185, speed: 32, tip: false},
-    1:{x: 389, xM: 46, y: 281, speed: 40, tip: false},
-    0:{x: 421, xM: 24, y: 377, speed: 48, tip: false}
+    3:{x: 325, xM: 110, y: 89, speed: 25},
+    2:{x: 357, xM: 78, y: 185, speed: 32},
+    1:{x: 389, xM: 46, y: 281, speed: 40},
+    0:{x: 421, xM: 24, y: 377, speed: 48}
   };
 
 var level1 = [
@@ -52,7 +53,7 @@ var startGame = function() {
   Game.setBoard(0,new TitleScreen("Tapper Root Beer", 
                                   "Press Enter to start playing",
                                   playGame));
-  Game.setBoardActive(0, false);
+  //Game.setBoardActive(0, false);
 };
 
 var playGame = function() {
@@ -109,6 +110,8 @@ var restart = function(){
   GameManager.initial=true;
   GameManager.points = 0; // Reset points
   GameManager.gameover=false;
+  GameManager.tips = [0, 0, 0, 0];
+  GameManager.status = "serving";
 }
 
 var winGame = function() {
@@ -143,6 +146,7 @@ var GameManager= new function(){
   this.initial=true;
   this.gameover=false;
   this.points = 0;
+  this.tips = [0, 0, 0, 0];
 
   this.moreClients=function(n){
     if(this.initial)this.initial=!this.initial;
@@ -174,8 +178,11 @@ var GameManager= new function(){
   this.loose=function(){
     this.gameover=true;
   }
+
   this.draw=function(ctx){
     ctx.fillStyle = "#FFFFFF";
+
+    // Draws "Points: " on upper left corner
     var text = "Points: "
     ctx.font = "bold 20px bangers";
     var measure = ctx.measureText(text);  
@@ -185,6 +192,7 @@ var GameManager= new function(){
     measure = ctx.measureText(this.points);  
     ctx.fillText(this.points, 70, 30);
   };
+
   this.step=function(dt){
     
     if(this.win()){
@@ -268,15 +276,35 @@ var Background = function(){
 
 Background.prototype = new Sprite();
 
+/////Tip/////
 
+var Tip = function(counter, x){
+  this.counter = counter;
+  this.x = x;
+  this.y = zones[this.counter].y + 10;
+
+  this.setup('Glass', {});
+  GameManager.tips[this.counter]++;
+  this.step = function(dt){
+    var collision = this.board.collide(this, OBJECT_PLAYER);
+    if(collision){
+      GameManager.addUpPoints(1500); // Add up points to total score
+      this.board.remove(this);
+      GameManager.tips[this.counter]--;
+    }
+  }
+}
+
+Tip.prototype = new Sprite();
+Tip.prototype.type = OBJECT_TIP;
 /////Client/////
 
 var Client = function(counter){
   this.counter = counter;
-  this.status = "thirsty";
   this.distance = 80;
   this.x = zones[counter].xM;
   this.y = zones[counter].y-10;
+  this.status = "thirsty";
   var speed = zones[counter].speed;
   this.setup('NPC', {vx: -speed}); // 50, 65, 81, 96 
   this.step = function(dt){
@@ -290,6 +318,7 @@ var Client = function(counter){
     }
 
     if(this.distance == 0){
+      this.board.add(new Tip(this.counter, this.x));
       this.distance = 80;
       //this.vx = zones[this.counter]/2;
       this.status = "thirsty";
@@ -300,6 +329,9 @@ Client.prototype = new Sprite();
 Client.prototype.type = OBJECT_CLIENT;
 Client.prototype.setStatus = function(status){
   this.status = status;
+}
+Client.prototype.getStatus = function(){
+  return this.status;
 }
 
 /////Beer/////
@@ -318,28 +350,29 @@ var Beer = function(counter, type){
       this.x = this.x - this.vx*dt; 
       var collision = this.board.collide(this, OBJECT_CLIENT);
       
-      if(collision) {
+      if(collision && collision.getStatus() == "thirsty") {
         this.t = 'Glass'; 
         this.setup('Glass', {vx: this.vx - this.vx/4});
         // Change of .type to GLASS
         this.type = OBJECT_PLAYER_GLASS;
         //this.board.remove(collision);
         collision.setStatus("drinking");
-        // Leave tip for Player
         GameManager.drinkBeer();
         //GameManager.satisfyClient();
         GameManager.addUpPoints(50); // Add up points to total score
         GameManager.returnGlass();
       }
+    
     }else if(this.t == 'Glass'){
       this.x = this.x + this.vx*dt;
       var collision = this.board.collide(this, OBJECT_PLAYER);
-      if(collision) {
+      if(collision && collision.getX() == zones[this.counter].x) {
         GameManager.retrieveGlass();
+        //this.vx = zones[this.counter].speed * 3;
         GameManager.addUpPoints(100); // Add up points to total score
         this.board.remove(this);
       }
-    } 
+    }
   };
 };
 
@@ -355,38 +388,42 @@ var Player = function(){
   this.reload = this.reloadTime;
   this.counter = 0;
   this.status = "serving";
-
   this.step = function(dt){
     if(Game.keys['up']){
       Game.keys['up'] = false;
       this.counter = (this.counter + 1)%4 || 0;
+      this.x = zones[this.counter].x;
     }
     else if (Game.keys['down']){
       Game.keys['down'] = false;
       this.counter = ((this.counter == 0) ? 3 : this.counter - 1) || 0;
+      this.x = zones[this.counter].x;
     }
 
-    if(zones[this.counter].tip == false){ // Check if there's no tip on counter
+    if(GameManager.tips[this.counter] == 0){ // Check if there's no tip on counter
       this.x = zones[this.counter].x; // Return to serving position
       this.status = "serving"; // Go back to serving
     }
     this.y = zones[this.counter].y;
-
-    if(Game.keys['left'] && zones[this.counter].tip && this.x > zones[this.counter].xM){
-      this.x = this.x - zones[this.counter].speed*dt;
-      // TODO: implement tip object
-      // TODO: implement collision tip-player:
-      //          set zones[this.counter].tip = false
-    }
-    if(Game.keys['right'] && zones[this.counter].tip && this.x < zones[this.counter].x){
-      this.x = this.x + zones[this.counter].speed*dt;
-      if(this.x == zones[this.counter].x){
-        this.status == "collecting"; // Start collecting
+   
+    if(GameManager.tips[this.counter] > 0){ // Wait for client to leave tip on counter
+      this.status = "collecting";
+      if(Game.keys['left'] && (this.x > zones[this.counter].xM)){
+        this.x = this.x - zones[this.counter].speed*4*dt;
+        this.y = zones[this.counter].y + 30;
+      }
+      if(Game.keys['right'] && (this.x < zones[this.counter].x)){
+        this.x = this.x + zones[this.counter].speed*4*dt;
+        if(this.x >= zones[this.counter].x){ // if player reaches the end of the right side
+          this.status = "serving"; // Start serving
+          this.x = zones[this.counter].x
+          this.y = zones[this.counter].y;
+        }
       }
     }
 
     this.reload -= dt;
-    if(Game.keys['space'] && this.reload < 0 && this.status == "serving"){ // Generate Beer
+    if(Game.keys['space'] && this.reload < 0 && (this.x == zones[this.counter].x)){ // Generate Beer
       Game.keys['space'] = false;
       this.reload = this.reloadTime;
       this.board.add(new Beer(this.counter, 'Beer'));
@@ -397,7 +434,9 @@ var Player = function(){
 
 Player.prototype = new Sprite();
 Player.prototype.type = OBJECT_PLAYER;
-
+Player.prototype.getX = function(){
+  return this.x;
+}
 
 /////ParedIzda/////
 
@@ -416,14 +455,6 @@ var DeadZone = function(x, y, w, h){
   this.w = w;
   this.h = h;
   this.side = ((this.x < Game.width) ? "left" : "right");
- /* 
-    draw()
-    var c = document.getElementById("game");
-    var ctx = c.getContext("2d");
-    ctx.fillStyle = "#FF0000";
-    ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.stroke();
-  */
 };
 DeadZone.prototype.step=function(){
     
@@ -436,7 +467,15 @@ DeadZone.prototype.step=function(){
 
 
 };
-DeadZone.prototype.draw=function(){};
+DeadZone.prototype.draw=function(){
+  /*
+  var c = document.getElementById("game");
+  var ctx = c.getContext("2d");
+  ctx.fillStyle = "#FF0000";
+  ctx.fillRect(this.x, this.y, this.w, this.h);
+  ctx.stroke();
+  */
+};
 DeadZone.prototype.type=OBJECT_DEADZONE;
 
 
