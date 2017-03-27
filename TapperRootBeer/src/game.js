@@ -17,19 +17,19 @@ var OBJECT_PLAYER = 2,
 
 var zones={ // xM -> mirrored position for x-axis
     initial: {x: 0, y: 0},
-    3:{x: 325, xM: 110, y: 89, speed: 49},
-    2:{x: 357, xM: 78, y: 185, speed: 65},
-    1:{x: 389, xM: 46, y: 281, speed: 81},
-    0:{x: 421, xM: 24, y: 377, speed: 96}
+    3:{x: 325, xM: 110, y: 89, speed: 25, tip: false},
+    2:{x: 357, xM: 78, y: 185, speed: 32, tip: false},
+    1:{x: 389, xM: 46, y: 281, speed: 40, tip: false},
+    0:{x: 421, xM: 24, y: 377, speed: 48, tip: false}
   };
 
 var level1 = [
-// Start, Number, Type, Override
+// Frequency, Number, Type, Delay, Override
 
-[ 0, 1, 'NFC', 500],
-[ 3000, 0, 'NFC', 500],
-[ 2000, 0, 'NFC', 500],
-[ 1000, 0, 'NFC', 500]
+[ 3000, 2, 'NFC', 1000],
+[ 3000, 3, 'NFC', 8000],
+[ 3000, 4, 'NFC', 6000],
+[ 3000, 2, 'NFC', 10000]
 
 ];
 
@@ -49,9 +49,10 @@ var startGame = function() {
     Game.setBoard(2,new Starfield(100,1.0,50));
   }  
   */
-  Game.setBoard(0,new TitleScreen("Alien Invasion", 
-                                  "Press fire to start playing",
+  Game.setBoard(0,new TitleScreen("Tapper Root Beer", 
+                                  "Press Enter to start playing",
                                   playGame));
+  Game.setBoardActive(0, false);
 };
 
 var playGame = function() {
@@ -67,16 +68,13 @@ var playGame = function() {
 
   var boardGameWon = new GameBoard(false);
   boardGameWon.add(new TitleScreen("You win!", 
-                                  "Press space to play again",
+                                  "Press Enter to play again",
                                   restart));
   var boardGameLost = new GameBoard(false);
   boardGameLost.add(new TitleScreen("You lose!", 
-                                  "Press space to play again",
+                                  "Press Enter to play again",
                                   restart));
-  Game.setBoard(5, boardGameWon);
-  Game.setBoard(6, boardGameLost);
-
-
+  
   //boardPlayer.add(new Level(level1));
   var bar0=level1[0];
   boardPlayer.add(new Spawner(0, bar0[1], bar0[2], bar0[3], bar0[0]));
@@ -92,6 +90,8 @@ var playGame = function() {
   Game.setBoard(2, boardPlayer);
   Game.setBoard(3, boardPared);
   Game.setBoard(4, GameManager);
+  Game.setBoard(5, boardGameWon);
+  Game.setBoard(6, boardGameLost);
   
 };
 
@@ -107,6 +107,7 @@ var restart = function(){
   GameManager.beer=0;
   GameManager.glass=0;
   GameManager.initial=true;
+  GameManager.points = 0; // Reset points
   GameManager.gameover=false;
 }
 
@@ -130,17 +131,6 @@ var loseGame = function() {
   Game.setBoardActive(1, true);
 };
 
-/*
-  Spawner(y, delay, nClientes, t, Cliente)
-    sp1 [_________]
-     sp2 [_________]
-      sp3 [_________]
-       sp4 [_________]
-
-  Object.create(cliente)
-*/
-
-
 
 //////////////////////////////Objects//////////////////////////////////
 
@@ -152,28 +142,30 @@ var GameManager= new function(){
   this.glass=0;
   this.initial=true;
   this.gameover=false;
-
-  
+  this.points = 0;
 
   this.moreClients=function(n){
     if(this.initial)this.initial=!this.initial;
     this.clients+=n;
   };
-  this.lessClients=function(){
+  this.satisfyClient=function(){
     this.clients--;
   };
-  this.moreBeer=function(){
+  this.serveBeer=function(){
     this.beer++;
   };
-  this.lessBeer=function(){
+  this.drinkBeer=function(){
     this.beer--;
   };
-  this.moreGlass=function(){
+  this.returnGlass=function(){
     this.glass++;
   };
-  this.lessGlass=function(){
+  this.retrieveGlass=function(){
     this.glass--;
   };
+  this.addUpPoints = function(points){
+    this.points += points;
+  }
 
   this.win=function(){
     return (this.initial==false) && (this.glass==0) && (this.clients==0);
@@ -182,7 +174,17 @@ var GameManager= new function(){
   this.loose=function(){
     this.gameover=true;
   }
-  this.draw=function(){};
+  this.draw=function(ctx){
+    ctx.fillStyle = "#FFFFFF";
+    var text = "Points: "
+    ctx.font = "bold 20px bangers";
+    var measure = ctx.measureText(text);  
+    ctx.fillText(text, 10, 30);
+
+    ctx.font = "bold 20px bangers";
+    measure = ctx.measureText(this.points);  
+    ctx.fillText(this.points, 70, 30);
+  };
   this.step=function(dt){
     
     if(this.win()){
@@ -271,16 +273,34 @@ Background.prototype = new Sprite();
 
 var Client = function(counter){
   this.counter = counter;
+  this.status = "thirsty";
+  this.distance = 80;
   this.x = zones[counter].xM;
   this.y = zones[counter].y-10;
   var speed = zones[counter].speed;
   this.setup('NPC', {vx: -speed}); // 50, 65, 81, 96 
   this.step = function(dt){
-    this.x = this.x - this.vx*dt;
+    if(this.status == "thirsty"){
+      this.x = this.x - this.vx*dt;
+    }
+    else if(this.status == "drinking" && this.distance > 0){
+      this.x = this.x + this.vx*dt;
+      //this.vx = zones[this.counter]*2;
+      this.distance--;
+    }
+
+    if(this.distance == 0){
+      this.distance = 80;
+      //this.vx = zones[this.counter]/2;
+      this.status = "thirsty";
+    }
   };
 };
 Client.prototype = new Sprite();
 Client.prototype.type = OBJECT_CLIENT;
+Client.prototype.setStatus = function(status){
+  this.status = status;
+}
 
 /////Beer/////
 
@@ -303,19 +323,21 @@ var Beer = function(counter, type){
         this.setup('Glass', {vx: this.vx - this.vx/4});
         // Change of .type to GLASS
         this.type = OBJECT_PLAYER_GLASS;
-        this.board.remove(collision);
+        //this.board.remove(collision);
+        collision.setStatus("drinking");
         // Leave tip for Player
-        GameManager.lessBeer();
-        GameManager.lessClients();
-        GameManager.moreGlass();
+        GameManager.drinkBeer();
+        //GameManager.satisfyClient();
+        GameManager.addUpPoints(50); // Add up points to total score
+        GameManager.returnGlass();
       }
     }else if(this.t == 'Glass'){
       this.x = this.x + this.vx*dt;
       var collision = this.board.collide(this, OBJECT_PLAYER);
       if(collision) {
-        GameManager.lessGlass();
+        GameManager.retrieveGlass();
+        GameManager.addUpPoints(100); // Add up points to total score
         this.board.remove(this);
-        // Add up points to total score
       }
     } 
   };
@@ -332,6 +354,7 @@ var Player = function(){
 
   this.reload = this.reloadTime;
   this.counter = 0;
+  this.status = "serving";
 
   this.step = function(dt){
     if(Game.keys['up']){
@@ -342,17 +365,32 @@ var Player = function(){
       Game.keys['down'] = false;
       this.counter = ((this.counter == 0) ? 3 : this.counter - 1) || 0;
     }
-    this.x = zones[this.counter].x;
+
+    if(zones[this.counter].tip == false){ // Check if there's no tip on counter
+      this.x = zones[this.counter].x; // Return to serving position
+      this.status = "serving"; // Go back to serving
+    }
     this.y = zones[this.counter].y;
 
+    if(Game.keys['left'] && zones[this.counter].tip && this.x > zones[this.counter].xM){
+      this.x = this.x - zones[this.counter].speed*dt;
+      // TODO: implement tip object
+      // TODO: implement collision tip-player:
+      //          set zones[this.counter].tip = false
+    }
+    if(Game.keys['right'] && zones[this.counter].tip && this.x < zones[this.counter].x){
+      this.x = this.x + zones[this.counter].speed*dt;
+      if(this.x == zones[this.counter].x){
+        this.status == "collecting"; // Start collecting
+      }
+    }
+
     this.reload -= dt;
-    if(Game.keys['space'] && this.reload < 0){ // Generate Beer
+    if(Game.keys['space'] && this.reload < 0 && this.status == "serving"){ // Generate Beer
       Game.keys['space'] = false;
       this.reload = this.reloadTime;
       this.board.add(new Beer(this.counter, 'Beer'));
-      GameManager.moreBeer();
-      //if(Math.floor((Math.random() * 10) + 1)>5)
-        //this.board.add(new Client(this.counter));
+      GameManager.serveBeer();
     }
   };
 }
@@ -377,6 +415,7 @@ var DeadZone = function(x, y, w, h){
   this.y = y;
   this.w = w;
   this.h = h;
+  this.side = ((this.x < Game.width) ? "left" : "right");
  /* 
     draw()
     var c = document.getElementById("game");
@@ -423,5 +462,5 @@ var loadDeadZones=function(boardPlayer){
 //////////////////////////////Events///////////////////////////////////
 
 window.addEventListener("load", function() {
-  Game.initialize("game",sprites,playGame);
+  Game.initialize("game",sprites,startGame);
 });

@@ -54,7 +54,7 @@ var Game = new function() {
   
 
   // Handle Input
-  var KEY_CODES = { 38:'up', 40:'down', 32 :'space' };
+  var KEY_CODES = { 38:'up', 40:'down', 32 :'space', 13: 'enter', 37: 'left', 39: 'right' };
   this.keys = {};
 
   this.setupInput = function() {
@@ -94,6 +94,7 @@ var Game = new function() {
   
   // Change an active game board
   this.setBoard = function(num,board) { boards[num] = board; };
+  
   this.setBoardActive = function(num, active){
     boards[num].setActive(active);
   }
@@ -167,8 +168,8 @@ var SpriteSheet = new function() {
 var TitleScreen = function TitleScreen(title,subtitle,callback) {
   var up = false;
   this.step = function(dt) {
-    if(!Game.keys['space']) up = true;
-    if(up && Game.keys['space'] && callback) callback();
+    if(!Game.keys['enter']) up = true;
+    if(up && Game.keys['enter'] && callback) callback();
   };
 
   this.draw = function(ctx) {
