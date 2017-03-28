@@ -167,9 +167,12 @@ var SpriteSheet = new function() {
 
 var TitleScreen = function TitleScreen(title,subtitle,callback) {
   var up = false;
+  this.active;
   this.step = function(dt) {
     if(!Game.keys['enter']) up = true;
-    if(up && Game.keys['enter'] && callback) callback();
+    if(up && Game.keys['enter'] && callback){ callback();
+     // console.log(callback);
+    }
   };
 
   this.draw = function(ctx) {
@@ -189,6 +192,10 @@ var TitleScreen = function TitleScreen(title,subtitle,callback) {
     var measure2 = ctx.measureText(subtitle);
     ctx.fillText(subtitle,Game.width/2 - measure2.width/2,Game.height/2 + 40);
   };
+
+  this.setActive = function(active){
+    this.active = active;
+  }
 };
 
 

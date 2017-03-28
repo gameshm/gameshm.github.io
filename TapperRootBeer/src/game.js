@@ -42,7 +42,6 @@ var level1 = [
 var startGame = function() {
   /*
   var ua = navigator.userAgent.toLowerCase();
-
   // Only 1 row of stars
   if(ua.match(/android/)) {
     Game.setBoard(0,new Starfield(50,0.6,100,true));
@@ -55,11 +54,11 @@ var startGame = function() {
   Game.setBoard(0,new TitleScreen("Tapper Root Beer", 
                                   "Press Enter to start playing",
                                   playGame));
-  //Game.setBoardActive(0, false);
+
 };
 
 var playGame = function() {
-
+  Game.setBoardActive(0, false);
   var boardBG = new GameBoard(true);
   boardBG.add(new Background());
 
@@ -71,12 +70,10 @@ var playGame = function() {
 
   var boardGameWon = new GameBoard(false);
   boardGameWon.add(new TitleScreen("You win!", 
-                                  "Press Enter to play again",
-                                  restart));
+                                  "Press Enter to play again"));
   var boardGameLost = new GameBoard(false);
   boardGameLost.add(new TitleScreen("You lose!", 
-                                  "Press Enter to play again",
-                                  restart));
+                                  "Press Enter to play again"));
   
   //boardPlayer.add(new Level(level1));
   var bar0=level1[0];
@@ -98,17 +95,6 @@ var playGame = function() {
   
 };
 
-var restart = function(){
-  Game.setBoardActive(6, false);
-  Game.setBoardActive(5, false);
-
-  Game.setBoardActive(3, true);
-  Game.setBoardActive(2, true);
-  Game.setBoardActive(1, true);
-
-  GameManager.restart();
-  tips = [0, 0, 0, 0];
-}
 
 var winGame = function() {
   Game.setBoardActive(6, false);
@@ -118,6 +104,8 @@ var winGame = function() {
   Game.setBoardActive(3, false);
   Game.setBoardActive(2, false);
   Game.setBoardActive(1, false);
+  GameManager.restart();
+  tips = [0, 0, 0, 0];
 };
 
 var loseGame = function() {
@@ -125,9 +113,11 @@ var loseGame = function() {
   Game.setBoardActive(5, false);
 
   //Game.setBoardActive(4, true);
-  Game.setBoardActive(3, true);
-  Game.setBoardActive(2, true);
-  Game.setBoardActive(1, true);
+  Game.setBoardActive(3, false);
+  Game.setBoardActive(2, false);
+  Game.setBoardActive(1, false);
+  GameManager.restart();
+  tips = [0, 0, 0, 0];
 };
 
 
