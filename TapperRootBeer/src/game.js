@@ -16,12 +16,14 @@ var OBJECT_PLAYER = 2,
     OBJECT_DEADZONE = 32;
     OBJECT_TIP = 64;
 
+var tips = [0, 0, 0, 0];
+
 var zones={ // xM -> mirrored position for x-axis
     initial: {x: 0, y: 0},
-    3:{x: 325, xM: 110, y: 89, speed: 25},
-    2:{x: 357, xM: 78, y: 185, speed: 32},
-    1:{x: 389, xM: 46, y: 281, speed: 40},
-    0:{x: 421, xM: 24, y: 377, speed: 48}
+    3:{x: 325, xM: 110, y: 89, speed: 12},
+    2:{x: 357, xM: 78, y: 185, speed: 20},
+    1:{x: 389, xM: 46, y: 281, speed: 26},
+    0:{x: 421, xM: 24, y: 377, speed: 32}
   };
 
 var level1 = [
@@ -104,14 +106,8 @@ var restart = function(){
   Game.setBoardActive(2, true);
   Game.setBoardActive(1, true);
 
-  GameManager.clients=0;
-  GameManager.beer=0;
-  GameManager.glass=0;
-  GameManager.initial=true;
-  GameManager.points = 0; // Reset points
-  GameManager.gameover=false;
-  GameManager.tips = [0, 0, 0, 0];
-  GameManager.status = "serving";
+  GameManager.restart();
+  tips = [0, 0, 0, 0];
 }
 
 var winGame = function() {
@@ -146,7 +142,6 @@ var GameManager= new function(){
   this.initial=true;
   this.gameover=false;
   this.points = 0;
-  this.tips = [0, 0, 0, 0];
 
   this.moreClients=function(n){
     if(this.initial)this.initial=!this.initial;
@@ -171,11 +166,19 @@ var GameManager= new function(){
     this.points += points;
   }
 
+  this.restart = function(){
+    GameManager.clients=0;
+    GameManager.beer=0;
+    GameManager.glass=0;
+    GameManager.initial=true;
+    GameManager.points = 0; // Reset points
+    GameManager.gameover=false;
+  }
   this.win=function(){
     return (this.initial==false) && (this.glass==0) && (this.clients==0);
   };
 
-  this.loose=function(){
+  this.lose=function(){
     this.gameover=true;
   }
 
@@ -200,7 +203,7 @@ var GameManager= new function(){
       winGame();
     }
     if(this.gameover){
-      //console.log("loose");
+      //console.log("lose");
       this.gameover=!this.gameover;
       loseGame();
     }
@@ -284,13 +287,13 @@ var Tip = function(counter, x){
   this.y = zones[this.counter].y + 10;
 
   this.setup('Glass', {});
-  GameManager.tips[this.counter]++;
+  tips[this.counter]++;
   this.step = function(dt){
     var collision = this.board.collide(this, OBJECT_PLAYER);
     if(collision){
       GameManager.addUpPoints(1500); // Add up points to total score
       this.board.remove(this);
-      GameManager.tips[this.counter]--;
+      tips[this.counter]--;
     }
   }
 }
@@ -341,7 +344,7 @@ var Beer = function(counter, type){
   this.y = zones[counter].y;
   this.counter = counter;
   this.t = type;
-  var speed = zones[counter].speed;
+  var speed = zones[counter].speed*4;
   
   this.setup(type, {vx: speed}); // 50, 65, 81, 96 
   
@@ -352,7 +355,7 @@ var Beer = function(counter, type){
       
       if(collision && collision.getStatus() == "thirsty") {
         this.t = 'Glass'; 
-        this.setup('Glass', {vx: this.vx - this.vx/4});
+        this.setup('Glass', {vx: zones[this.counter].speed*1.5});
         // Change of .type to GLASS
         this.type = OBJECT_PLAYER_GLASS;
         //this.board.remove(collision);
@@ -400,13 +403,13 @@ var Player = function(){
       this.x = zones[this.counter].x;
     }
 
-    if(GameManager.tips[this.counter] == 0){ // Check if there's no tip on counter
+    if(tips[this.counter] == 0){ // Check if there's no tip on counter
       this.x = zones[this.counter].x; // Return to serving position
       this.status = "serving"; // Go back to serving
     }
     this.y = zones[this.counter].y;
    
-    if(GameManager.tips[this.counter] > 0){ // Wait for client to leave tip on counter
+    if(tips[this.counter] > 0){ // Wait for client to leave tip on counter
       this.status = "collecting";
       if(Game.keys['left'] && (this.x > zones[this.counter].xM)){
         this.x = this.x - zones[this.counter].speed*4*dt;
@@ -454,15 +457,27 @@ var DeadZone = function(x, y, w, h){
   this.y = y;
   this.w = w;
   this.h = h;
-  this.side = ((this.x < Game.width) ? "left" : "right");
+  this.side = (this.x < Game.width/2 ? "left" : "right");
 };
 DeadZone.prototype.step=function(){
     
-    var object = this.board.collide(this, OBJECT_CLIENT | OBJECT_PLAYER_GLASS | OBJECT_PLAYER_BEER);
+    var beer = this.board.collide(this, OBJECT_PLAYER_GLASS | OBJECT_PLAYER_BEER);
+    var client = this.board.collide(this, OBJECT_CLIENT);
   
-    if(object){
-      this.board.remove(object);
-      GameManager.loose();
+    if(beer){
+      this.board.remove(beer);
+      GameManager.lose();
+    }
+    if(client){
+      if(this.side == "left"){
+        GameManager.satisfyClient();
+        console.log("client satisfied!");
+      }
+      else if(this.side == "right"){
+        GameManager.lose();
+        console.log("Game lost");
+      }
+      this.board.remove(client);
     }
 
 
