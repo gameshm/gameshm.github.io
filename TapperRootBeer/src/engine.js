@@ -26,7 +26,8 @@
 
 var Game = new function() {                                                                  
   var boards = [];
-
+  var activeBoards = [];
+  this.maxPoints = 0;
   // Game Initialization
   this.initialize = function(canvasElementId,sprite_data,callback) {
     this.canvas = document.getElementById(canvasElementId);
@@ -84,7 +85,7 @@ var Game = new function() {
     if(dt > maxTime) { dt = maxTime; }
 
     for(var i=0,len = boards.length;i<len;i++) {
-      if(boards[i]) { 
+      if(boards[i] && activeBoards[i]) { 
         boards[i].step(dt);
         boards[i].draw(Game.ctx);
       }
@@ -93,10 +94,14 @@ var Game = new function() {
   };
   
   // Change an active game board
-  this.setBoard = function(num,board) { boards[num] = board; };
+  this.setBoard = function(num,board) { 
+    boards[num] = board; 
+    activeBoards[num] = true;
+  };
   
   this.setBoardActive = function(num, active){
-    boards[num].setActive(active);
+    activeBoards[num] = active;
+    console.log("Capa " + num + " activa: " + active);
   }
 
   this.setupMobile = function() {
@@ -172,14 +177,15 @@ var TitleScreen = function TitleScreen(title,subtitle,callback) {
     if(!Game.keys['enter']) up = true;
     if(up && Game.keys['enter'] && callback){ callback();
      // console.log(callback);
+     Game.keys['enter'] = false;
     }
   };
 
   this.draw = function(ctx) {
 
     // Background
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, Game.width, Game.height);
+   // ctx.fillStyle = "#000000";
+    //ctx.fillRect(0, 0, Game.width, Game.height);
 
     // Foreground
     ctx.fillStyle = "#FFFFFF";
@@ -191,6 +197,15 @@ var TitleScreen = function TitleScreen(title,subtitle,callback) {
     ctx.font = "bold 20px bangers";
     var measure2 = ctx.measureText(subtitle);
     ctx.fillText(subtitle,Game.width/2 - measure2.width/2,Game.height/2 + 40);
+
+    var text = "Record: "
+    ctx.font = "bold 35px bangers";
+    var measure = ctx.measureText(text);  
+    ctx.fillText(text, Game.width/2 - measure2.width/2,Game.height/2 + 100);
+
+    ctx.font = "bold 35px bangers";
+    measure = ctx.measureText(Game.maxPoints);  
+    ctx.fillText(Game.maxPoints, Game.width/2 - measure2.width/2 + 110,Game.height/2 + 100);
   };
 
   this.setActive = function(active){
