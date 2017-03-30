@@ -101,7 +101,7 @@ var Game = new function() {
   
   this.setBoardActive = function(num, active){
     activeBoards[num] = active;
-    console.log("Capa " + num + " activa: " + active);
+    //console.log("Capa " + num + " activa: " + active);
   }
 
   this.setupMobile = function() {

@@ -30,14 +30,34 @@ var zones={ // xM -> mirrored position for x-axis
     0:{x: 421, xM: 24, y: 377, speed: 32}
   };
 
-var level1 = [
-// Frequency, Number, Type, Delay, Override
-
-[ 3000, 2, 'NFC', 1000],
-[ 3000, 3, 'NFC', 8000],
-[ 3000, 4, 'NFC', 6000],
-[ 3000, 2, 'NFC', 10000]
-
+var n=0;
+var mssg="next level";
+var level =
+[ //level 0
+  [// Frequency, Number, Type, Delay, Override
+   [ 5000, 1, 'NFC', 1000],
+   [ 5000, 1, 'NFC', 8000],
+   [ 5000, 1, 'NFC', 6000],
+   [ 5000, 1, 'NFC', 10000]
+  ],//level 1
+  [
+    [ 3000, 2, 'NFC', 1000],
+    [ 3000, 3, 'NFC', 5000],
+    [ 3000, 2, 'NFC', 3000],
+    [ 3000, 3, 'NFC', 7000]
+  ],//level 2
+  [
+    [ 2000, 3, 'NFC', 1000],
+    [ 2000, 4, 'NFC', 5000],
+    [ 2000, 5, 'NFC', 3000],
+    [ 2000, 3, 'NFC', 70000]
+  ],//level 3
+  [
+    [ 1000, 4, 'NFC', 1000],
+    [ 1000, 4, 'NFC', 4000],
+    [ 1000, 5, 'NFC', 2000],
+    [ 1000, 5, 'NFC', 50000]
+  ]
 ];
 
 
@@ -65,7 +85,7 @@ var startGame = function() {
 
 var playGame = function() {
   Game.setBoardActive(1, false);
-  console.log("Has llamado a Playgame");
+  console.log(n);
 
   var boardPlayer = new GameBoard(true);
   var boardPared = new GameBoard(true);
@@ -74,21 +94,11 @@ var playGame = function() {
   boardPlayer=loadDeadZones(boardPlayer);
 
   var boardGameWon = new TitleScreen("You win!", 
-                                  "Press Enter to play again", playGame);
+                                  "Press Enter to play "+mssg, playGame);
   var boardGameLost = new TitleScreen("You lose!", 
                                   "Press Enter to play again", playGame);
   
-  //boardPlayer.add(new Level(level1));
-  var bar0=level1[0];
-  boardPlayer.add(new Spawner(0, bar0[1], bar0[2], bar0[3], bar0[0]));
-  var bar1=level1[1];
-  boardPlayer.add(new Spawner(1, bar1[1], bar1[2], bar1[3], bar1[0]));
-  var bar2=level1[2];
-  boardPlayer.add(new Spawner(2, bar2[1], bar2[2], bar2[3], bar2[0]));
-  var bar3=level1[3];
-  boardPlayer.add(new Spawner(3, bar3[1], bar3[2], bar3[3], bar3[0]));
-
-
+  boardPlayer=loadLevel(boardPlayer, n);
   
   Game.setBoard(2, boardPlayer);
   Game.setBoard(3, boardPared);
@@ -97,7 +107,7 @@ var playGame = function() {
   Game.setBoardActive(5, false);
   Game.setBoard(6, boardGameLost);
   Game.setBoardActive(6, false);
-  console.log("Fin constructor playgame");
+  //console.log("Fin constructor playgame");
 };
 
 
@@ -114,6 +124,13 @@ var winGame = function() {
   }
   GameManager.restart();
   tips = [0, 0, 0, 0];
+
+  if(n+1<=level.length)
+    n++;
+  else{
+    n=0;
+    mssg=" again";
+  }
 };
 
 var loseGame = function() {
@@ -130,6 +147,7 @@ var loseGame = function() {
   GameManager.restart();
   tips = [0, 0, 0, 0];
   lifePoints = 5;
+  n=0;
 };
 
 
@@ -228,7 +246,7 @@ var GameManager= new function(){
 };
 
 /////Level/////
-var Level=function(levelData){
+/*var Level=function(levelData){
   this.t=0;
   this.levelData=[];
 
@@ -250,7 +268,7 @@ Level.prototype.step=function(dt){
 
 };
 Level.prototype.draw=function(ctx){};
-
+*/
 
 /////Spawner/////
 var lastClient=-1;
@@ -537,6 +555,20 @@ var loadDeadZones=function(boardPlayer){
 
 };
 
+var loadLevel=function(boardPlayer, x){
+
+  var bar0=level[x][0];
+  boardPlayer.add(new Spawner(0, bar0[1], bar0[2], bar0[3], bar0[0]));
+  var bar1=level[x][1];
+  boardPlayer.add(new Spawner(1, bar1[1], bar1[2], bar1[3], bar1[0]));
+  var bar2=level[x][2];
+  boardPlayer.add(new Spawner(2, bar2[1], bar2[2], bar2[3], bar2[0]));
+  var bar3=level[x][3];
+  boardPlayer.add(new Spawner(3, bar3[1], bar3[2], bar3[3], bar3[0]));
+
+
+  return boardPlayer;
+}
 
 //////////////////////////////Events///////////////////////////////////
 
