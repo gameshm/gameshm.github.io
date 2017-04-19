@@ -22,7 +22,7 @@ Q.Sprite.extend("Mario",{
     // You can call the parent's constructor with this._super(..)
     this._super(p, {
       sprite: "mario_small",
-      sheet: "mario_small",  // Setting a sprite sheet sets sprite width and height
+      sheet: "marioR",  // Setting a sprite sheet sets sprite width and height
       x: 150,           // You can also set additional properties that can
       y: 380,           // be overridden on object creation
       gravity: 1             
