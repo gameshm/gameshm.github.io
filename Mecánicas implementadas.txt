@@ -1,0 +1,21 @@
+He implementado todas las mecánicas obligatorias:
+- Background
+- Player
+- Beer (Glass y Beer en la misma clase, con un atributo de tipo para diferenciar entre sprites)
+- Client (un atributo para diferenciar entre estados (drinking, thirsty).
+- Colisiones (todas las posibles)
+- DeadZones (un atributo para diferenciar entre las del lado izquierdo y las del derecho)
+- Spawners
+- GameManager
+- Condiciones de finalización (enviando notificaciones a GameManager cada vez que ocurre algo importante)
+
+De las partes opcionales he implementado:
+- Vidas. Un total de 5 vidas por intento. Se maneja desde GameManager
+- Puntuación y record (manejadas desde GameManager y una variable global para el record)
+- Propinas. Permito desplazar hacia la izquierda/derecha (pero no más que los extremos de las barras)
+	    para recoger las propinas, que las crean los clientes aleatoriamente cuando han terminado de beber.
+	    El Player tiene dos estados: serving y collecting. Esto me permite controlar las colisiones y el poder
+	    lanzar más cervezas.
+- Comportamiento de los clientes. Les hago retroceder mientras beben y he cambiado el sprite para que muestre
+  				  que están efectivamente bebiendo. Aprovecho el estado (drinking, thirsty) para
+				  controlar si pueden coger o no la cerveza.
