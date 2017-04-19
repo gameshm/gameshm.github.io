@@ -2,14 +2,14 @@
 <map version="1.0" orientation="orthogonal" renderorder="left-up" width="200" height="50" tilewidth="32" tileheight="32" backgroundcolor="#ffffff" nextobjectid="1">
  <tileset firstgid="1" name="sheet" tilewidth="32" tileheight="32" spacing="2" margin="1" tilecount="49" columns="7">
   <image source="../images/sheet.png" width="256" height="256"/>
-  <tile id="23">
+  <tile gid="23" id="23">
    <animation>
     <frame tileid="23" duration="300"/>
     <frame tileid="30" duration="300"/>
     <frame tileid="37" duration="300"/>
    </animation>
   </tile>
-  <tile id="27">
+  <tile gid="27" id="27">
    <animation>
     <frame tileid="27" duration="200"/>
     <frame tileid="34" duration="200"/>

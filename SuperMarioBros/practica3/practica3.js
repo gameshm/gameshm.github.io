@@ -66,13 +66,13 @@ Q.load(["mario_small.png", "mario_small.json"], function(){
       });
 
 Q.scene("level1",function(stage) {
-      Q.stageTMX("level.tmx",stage);
+      Q.stageTMX("lev.tmx",stage);
 
       var mario = stage.insert(new Q.Mario());
       stage.add("viewport").follow(mario);
 });
  
-Q.loadTMX("level.tmx", function() {
+Q.loadTMX("lev.tmx", function() {
 
     Q.stageScene("level1");
 
