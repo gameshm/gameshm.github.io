@@ -1,5 +1,7 @@
+
+
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="left-up" width="200" height="50" tilewidth="32" tileheight="32" backgroundcolor="#ffffff" nextobjectid="1">
+<map version="1.0" orientation="orthogonal" renderorder="left-up" width="200" height="50" tilewidth="32" tileheight="32" nextobjectid="1">
  <tileset firstgid="1" name="sheet" tilewidth="32" tileheight="32" spacing="2" margin="1" tilecount="49" columns="7">
   <image source="../images/sheet.png" width="256" height="256"/>
   <tile gid="23" id="23">
@@ -25,6 +27,8 @@
  <layer name="playlayer" width="200" height="50">
   <data encoding="base64" compression="zlib">
    eJzt2N1K9DAUheEoioKi4B+DehBFUJH6c/83Z3JQCDVpdtpksqXvAws/PjpjWvdqpmMMAAAAAAAAAAAAAAAAAAAAAAAAAGCtg94LALB5g8t5IsDWDYn/px/bsOu9AOXoB5AW9mMXRFs/bOHxry0WgUXGmdJuusbBpPcPTawp78dn/WWo8BgJ2tHeD2u22w++J+lPcz+sqdeP40hay93fU3vAuM+v6YeWzzP/fa8bhNk3G0mJaT9afH899/f281nj2vl1frucZHIrfL8jl6sV6ymd93CGtO+FseussR82kRKxfjxNfv4Hfp0XwkicufwsXMup+TtDvpcfC99Pm8tItH2+sjMpEfbjfiY9SfcFDf3w3Th0eUlk3x0Jv2utRXs/bCYlwn74e3BsT+y9h0jnvnc/fDdSvZh2RMNzT+ozZO5+pLkfVpASsX5cu7y5fJll/ZDc76Up2Rekya3P/85UP1Kv9a/J9eIu+HfJNUo9M8XeQ/p8ZWbOMTb/uSztR8lzXu5YK0yJFv2oPc89kpodyexLUmPPW7M/mplzrNWPkvtQzWM1Jrxv9Z7tlv0o7UGPftwI85w4x1r9kLxuvM61j9WYUe/ZbtkPyezPPZ/vox8PwrwnzpF+tO0HAAAAAAAAAAAAAAAAAAAAAAAAdPsFxcZKiQ==
+	
   </data>
+  
  </layer>
 </map>
