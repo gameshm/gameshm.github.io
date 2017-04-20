@@ -3,12 +3,14 @@ var game = function() {
 // Set up an instance of the Quintus engine  and include
 // the Sprites, Scenes, Input and 2D module. The 2D module
 // includes the `TileLayer` class as well as the `2d` componet.
-var Q = window.Q = Quintus()
-        .include("Sprites, Scenes, Input, 2D, Anim, Touch, UI, TMX")
+var Q = window.Q = Quintus({ audioSupported: [ 'mp3' ] })
+        .include("Sprites, Scenes, Input, 2D, Anim, Touch, UI, TMX, Audio").enableSound()
         // Maximize this game to whatever the size of the browser is
         .setup({ maximize: true })
         // And turn on default input controls and touch input (for UI)
-        .controls().touch()
+        .controls().touch();
+
+
 
 Q.animations("mario_anim", {
   walk_right: { frames: [0,1,2,3], rate: 1/10, flip: false, loop: true}, 
@@ -51,7 +53,7 @@ Q.Sprite.extend("Mario",{
   },
 
   step: function(dt){
-    if(this.p.vy<0 || this.p.vy>0){
+    if(this.p.vy!=0){
       this.play("jump_"+this.p.direction);
     }else if(this.p.vx > 0) {
       this.play("walk_right"); 
@@ -142,6 +144,9 @@ Q.Sprite.extend("Bloopa",{//calamar
   }
 
 });
+Q.load([ "music_main.mp3" ], function() { 
+  Q.audio.play('music_main.mp3',{ loop: true });
+});
 
 Q.load(["mario_small.png", "mario_small.json", "goomba.png", "goomba.json", "bloopa.png", "bloopa.json"], function(){
         Q.compileSheets("mario_small.png", "mario_small.json");
@@ -151,7 +156,6 @@ Q.load(["mario_small.png", "mario_small.json", "goomba.png", "goomba.json", "blo
 
 Q.scene("level1",function(stage) {
       Q.stageTMX("level.tmx",stage);
-
       var mario = stage.insert(new Q.Mario());
       var goomba = stage.insert(new Q.Goomba());
       var bloopa = stage.insert(new Q.Bloopa());
