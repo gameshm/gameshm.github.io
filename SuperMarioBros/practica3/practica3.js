@@ -25,16 +25,15 @@ Q.Sprite.extend("Mario",{
       sheet: "marioR",  // Setting a sprite sheet sets sprite width and height
       x: 150,           // You can also set additional properties that can
       y: 380,           // be overridden on object creation
-      gravity: 0.3             
+      gravity: 0.6             
     });
     this.add('2d, platformerControls, animation');
 
-    this.on("hit.sprite",function(collision) {
-
-      if(collision.obj.isA("Tower")) {
-        Q.stageScene("endGame",1, { label: "You Won!" }); 
-        this.destroy();
-      }
+    this.on("bump.top",function(collision) {
+        if(collision.obj.isA("Mario")) {
+          this.destroy(); 
+          collision.obj.p.vy = -300;
+        }
     });
 
   },
@@ -49,7 +48,7 @@ Q.Sprite.extend("Mario",{
 
 });
 
-Q.Sprite.extend("Goomba",{
+Q.Sprite.extend("Goomba",{//seta
   init: function(p) {
     this._super(p, {
       sprite: "goomba",
@@ -58,14 +57,18 @@ Q.Sprite.extend("Goomba",{
       y: 380,           // be overridden on object creation
       gravity: 1             
     });
-    this.add('2d, platformerControls, animation');
-    this.on("hit.sprite",function(collision) {
-
-      // Check the collision, if it's the Tower, you win!
-      if(collision.obj.isA("Tower")) {
-        Q.stageScene("endGame",1, { label: "You Won!" }); 
-        this.destroy();
-      }
+    this.add('2d, animation');
+    this.on("bump.top",function(collision) {
+        if(collision.obj.isA("Mario")) {
+          this.destroy(); 
+          collision.obj.p.vy = -300;
+        }
+    });
+    this.on("bump.left,bump.right,bump.bottom",function(collision) {
+        if(collision.obj.isA("Mario")) { 
+            Q.stageScene("endGame",1, { label: "You Died" }); 
+            collision.obj.destroy();
+        }
     });
   },
   step: function(dt){
@@ -78,9 +81,44 @@ Q.Sprite.extend("Goomba",{
 
 });
 
-Q.load(["mario_small.png", "mario_small.json", "goomba.png", "goomba.json"], function(){
+Q.Sprite.extend("Bloopa",{//calamar
+  init: function(p) {
+    this._super(p, {
+      sprite: "bloopa",
+      sheet: "bloopa",  // Setting a sprite sheet sets sprite width and height
+      x: 350,           // You can also set additional properties that can
+      y: 380,           // be overridden on object creation
+      gravity: 1             
+    });
+    this.add('2d, animation');
+    this.on("bump.top",function(collision) {
+        if(collision.obj.isA("Mario")) {
+        console.log("bump"); 
+          this.destroy(); 
+          collision.obj.p.vy = -300;
+        }
+    });
+    this.on("bump.left,bump.right,bump.bottom",function(collision) {
+        if(collision.obj.isA("Mario")) { 
+            Q.stageScene("endGame",1, { label: "You Died" }); 
+            collision.obj.destroy();
+        }
+    });
+  },
+  step: function(dt){
+    if(this.p.y > 550){
+      this.p.x = 150;
+      this.p.y = 380;
+      this.p.vy = 0;
+    }
+  }
+
+});
+
+Q.load(["mario_small.png", "mario_small.json", "goomba.png", "goomba.json", "bloopa.png", "bloopa.json"], function(){
         Q.compileSheets("mario_small.png", "mario_small.json");
         Q.compileSheets("goomba.png", "goomba.json");
+        Q.compileSheets("bloopa.png", "bloopa.json");
       });
 
 Q.scene("level1",function(stage) {
@@ -88,6 +126,7 @@ Q.scene("level1",function(stage) {
 
       var mario = stage.insert(new Q.Mario());
       var goomba = stage.insert(new Q.Goomba());
+      var bloopa = stage.insert(new Q.Bloopa());
       stage.add("viewport").follow(mario);
 });
  
