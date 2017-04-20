@@ -24,6 +24,18 @@ Q.animations("mario_anim", {
   climb: { frames: [16, 17], rate: 1/3, flip: false }
 });
 
+Q.animations("bloopa_anim", {
+  stand: { frames: [0], rate: 1/10, flip: false}, 
+  up: { frames: [1], rate: 1/10, flip:false}, 
+  down: { frames: [2], rate: 1/10, flip: false }
+});
+
+Q.animations("goomba_anim", {
+  move: { frames: [0, 1], rate: 1/2, flip: false, loop: true}, 
+  smash: { frames: [2], rate: 1/10, flip:false}, 
+  down: { frames: [3], rate: 1/10, flip:false},
+});
+
 
 // ## Player Sprite
 // The very basic player sprite, this is just a normal sprite
@@ -77,7 +89,7 @@ Q.Sprite.extend("Mario",{
 Q.Sprite.extend("Goomba",{//seta
   init: function(p) {
     this._super(p, {
-      sprite: "goomba",
+      sprite: "goomba_anim",
       sheet: "goomba",  // Setting a sprite sheet sets sprite width and height
       x: 250,           // You can also set additional properties that can
       y: 380,           // be overridden on object creation
@@ -99,7 +111,7 @@ Q.Sprite.extend("Goomba",{//seta
     });
   },
   step: function(dt){
-
+    this.play("move");
     if(this.p.y > 550){
       this.p.x = 150;
       this.p.y = 380;
@@ -112,21 +124,24 @@ Q.Sprite.extend("Goomba",{//seta
 Q.Sprite.extend("Bloopa",{//calamar
   init: function(p) {
     this._super(p, {
-      sprite: "bloopa",
+      sprite: "bloopa_anim",
       sheet: "bloopa",  // Setting a sprite sheet sets sprite width and height
       x: 350,           // You can also set additional properties that can
       y: 380,           // be overridden on object creation
-      gravity: 0.1       
+      gravity: 0.1,
+      death: false 
     });
     this.add('2d, animation, aiBounce');
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario")) {
-          this.destroy(); 
+          death=true;
+          this.play("down");
+          //setTimeout(function(){that.destroy();}, 1000);
           collision.obj.p.vy = -300;
         }
     });
     this.on("bump.bottom",function(collision) {
-      this.vy = -100;
+      //this.vy = -100;
     });
     this.on("bump.left,bump.right,bump.bottom",function(collision) {
         if(collision.obj.isA("Mario")) { 
@@ -136,6 +151,13 @@ Q.Sprite.extend("Bloopa",{//calamar
     });
   },
   step: function(dt){
+    if(this.vy>0){
+      this.play("down");
+    }else if(this.vy<0){
+      this.play("up");
+    }else
+      this.play("stand");
+
     if(this.p.y > 550){
       this.p.x = 150;
       this.p.y = 380;
