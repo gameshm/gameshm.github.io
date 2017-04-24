@@ -1,4 +1,5 @@
 {
+	"mario":{"sx":0,"sy":0,"tileW":32,"tileH":32,"frames":20},
 	"marioR":{"sx":0,"sy":0,"tileW":32,"tileH":32,"frames":3},
 	"marioL":{"sx":448,"sy":0,"tileW":32,"tileH":32,"frames":3},
 	"marioDie":{"sx":384,"sy":0,"tileW":32,"tileH":32,"frames":1},
