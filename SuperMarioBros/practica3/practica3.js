@@ -121,8 +121,11 @@ Q.Sprite.extend("Princess", {
     });
     this.add('2d');
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
-      if(collision.obj.isA("Mario"))
+      if(collision.obj.isA("Mario")){
         Q.stageScene("endGame",1, { label: "You win" }); 
+        Q.audio.stop('music_main.mp3');
+        Q.audio.play('music_level_complete.mp3',{ loop: false });
+      }
   });
 }
 });
@@ -243,7 +246,7 @@ Q.Sprite.extend("Bloopa",{//calamar
   }
 }
 });
-Q.load([ "music_main.mp3", "coin.mp3" ], function() { 
+Q.load([ "music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() { 
   Q.audio.play('music_main.mp3',{ loop: true });
 });
 
@@ -289,6 +292,8 @@ Q.scene('endGame',function(stage) {
                                                    label: stage.options.label }));
   button.on("click",function() {
     Q.clearStages();
+    Q.audio.stop();
+    Q.audio.play('music_main.mp3',{ loop: true });
     Q.stageScene('level1');
   });
 
