@@ -10,8 +10,12 @@ var Q = window.Q = Quintus({ audioSupported: [ 'mp3' ] })
         // And turn on default input controls and touch input (for UI)
         .controls().touch();
 
-
-
+var purse=[{x: 300, y: 500}, {x: 650, y:475}, {x: 1000, y:475},
+           {x: 900, y: 475}, {x: 850, y: 375}, {x: 1150, y: 50},
+           {x: 1200, y:50}, {x: 1250, y:50}, {x: 1075, y:75},
+           {x: 1500, y:280}, {x: 1750, y:420}, {x: 2340, y:225},
+           {x: 2380, y:525}, {x: 3025, y:525}, {x: 3335, y:450},
+           {x: 3635, y:525}, {x: 3825, y:480}, {x: 1600, y:450}];
 Q.animations("mario_anim", {
   walk_right: { frames: [0,1,2,3], rate: 1/10, flip: false, loop: true}, 
   walk_left: { frames: [15,16,17], rate: 1/10, flip:false, loop: true}, 
@@ -99,13 +103,12 @@ Q.Sprite.extend("Mario",{
     if(this.p.y> 550){
       this.die();
     }
-  
   }
 
 });
-Q.Sprite.extend("Coin",{
-  init:function(p){
-    this._super(p,{
+Q.Sprite.extend("Coin", {
+  init:function(){
+    this._super({
       sprite:"coin_anim",
       sheet:"coin",
       x: 250,
@@ -114,11 +117,16 @@ Q.Sprite.extend("Coin",{
     });
     this.add('2d, animation, tween');
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
-      Q.audio.play('coin.mp3',{ loop: false });
-      this.animate({ x: this.p.x, y: this.p.y-100, angle: 0 }, 0.1);
-      this.play("take", 1);
+       if(collision.obj.isA("Mario")) { 
+        this.up();
+      }
     });
     this.on("toke", this, "destroy");
+  },
+  up: function(){
+    Q.audio.play('coin.mp3',{ loop: false });
+    this.animate({ x: this.p.x, y: this.p.y-100, angle: 0 }, 0.1);
+    this.play("take", 1);
   },
   step: function(){
     this.play("stand");
@@ -230,7 +238,15 @@ Q.load(["coin.png","coin.json","mario_small.png", "mario_small.json", "goomba.pn
 Q.scene("level1",function(stage) {
       Q.stageTMX("level.tmx",stage);
       var mario = stage.insert(new Q.Mario());
-      var coin = stage.insert(new Q.Coin(160, 400));
+      
+      var coin =[];
+
+      for(var i=0; i<purse.length; i++){
+        coin[i]= stage.insert(new Q.Coin());
+        coin[i].p.x=purse[i].x;
+        coin[i].p.y=purse[i].y;
+    }
+
       //var goomba = stage.insert(new Q.Goomba());
       //var bloopa = stage.insert(new Q.Bloopa());
       stage.add("viewport").follow(mario,{ x: true, y: false });
