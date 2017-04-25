@@ -10,7 +10,7 @@ var Q = window.Q = Quintus({ audioSupported: [ 'mp3' ] })
         // And turn on default input controls and touch input (for UI)
         .controls().touch();
 
-var purse=[{x: 300, y: 500}, {x: 650, y:475}, {x: 1000, y:475},
+var purse=[{x: 250, y: 500}, {x: 650, y:475}, {x: 1000, y:475},
            {x: 900, y: 475}, {x: 850, y: 375}, {x: 1150, y: 50},
            {x: 1200, y:50}, {x: 1250, y:50}, {x: 1075, y:75},
            {x: 1500, y:280}, {x: 1750, y:420}, {x: 2340, y:225},
@@ -24,7 +24,7 @@ Q.animations("mario_anim", {
   stand_right: { frames:[0], rate: 1/10, flip: false },
   stand_left: { frames: [14], rate: 1/10, flip:false },
   duck_right: { frames: [15], rate: 1/10, flip: false },
-  die: { frames: [12], rate: 0.75, next: 'stand_left', loop:false, trigger:"died" },
+  die: { frames: [12], rate: 0.75, loop:false, trigger:"died"},
   duck_left: { frames: [15], rate: 1/10, flip: "x" },
   climb: { frames: [16, 17], rate: 1/3, flip: false }
 });
@@ -69,27 +69,21 @@ Q.Sprite.extend("Mario",{
 
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario")) {
-          this.destroy(); 
           collision.obj.p.vy = -300;
         }
     });
 
-    this.on("died", this, "death");
+    this.on("died", this, "destroy");
   },
 
   die: function(){
    this.play("die", 1);
-   Q.stageScene("endGame",1, { label: "You Died" }); 
+   Q.stageScene("endGame",1, { label: "You Died" });
   },
 
   jump:function(){
     this.p.vy=-300;
   },
-
-  death: function() { 
-    this.destroy();
-  },
-
   step: function(dt){
     if(this.p.vy!=0){
       this.play("jump_"+this.p.direction);
@@ -113,13 +107,13 @@ Q.Sprite.extend("Mario",{
 Q.Sprite.extend("Princess", {
   init:function(){
     this._super({
-      sprite:"princess",
-      sheet:"princess",
+      asset:"princess.png",
       x: 4600,
       y: 525, 
       gravity:1
     });
     this.add('2d');
+  
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
       if(collision.obj.isA("Mario")){
         Q.stageScene("endGame",1, { label: "You win" }); 
@@ -140,6 +134,7 @@ Q.Sprite.extend("Coin", {
       gravity:0
     });
     this.add('2d, animation, tween');
+    this.p.sensor=true;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
        if(collision.obj.isA("Mario")) { 
         this.up();
@@ -148,6 +143,7 @@ Q.Sprite.extend("Coin", {
     this.on("toke", this, "destroy");
   },
   up: function(){
+    Q.audio.stop('coin.mp3');
     Q.audio.play('coin.mp3',{ loop: false });
     this.animate({ x: this.p.x, y: this.p.y-100, angle: 0 }, 0.1);
     this.play("take", 1);
@@ -259,7 +255,9 @@ Q.load(["princess.png","princess.json","coin.png","coin.json","mario_small.png",
       });
 
 Q.scene("level1",function(stage) {
+      Q.state=0;
       Q.stageTMX("level.tmx",stage);
+      
       var mario = stage.insert(new Q.Mario());
       
       var coin =[];
@@ -273,6 +271,8 @@ Q.scene("level1",function(stage) {
       var goomba = stage.insert(new Q.Goomba());
       var bloopa = stage.insert(new Q.Bloopa());
       stage.add("viewport").follow(mario,{ x: true, y: false });
+      //stage.insert(new Q.HUB());
+
 });
  
 Q.loadTMX("level.tmx", function() {
