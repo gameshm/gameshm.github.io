@@ -103,8 +103,6 @@ Q.Sprite.extend("Mario",{
 
 });
 
-//princess 4600 525
-
 Q.Sprite.extend("Princess", {
   init:function(){
     this._super({
@@ -156,6 +154,16 @@ Q.Sprite.extend("Coin", {
 
 });
 
+Q.component("defaultEnemy",{
+  added:function(){
+    this.entity.on("bump.left,bump.right,bump.bottom",function(collision) {
+        if(collision.obj.isA("Mario")) { 
+            collision.obj.die();
+        }
+    });
+  }
+});
+
 Q.Sprite.extend("Goomba",{//seta
   init: function(p) {
     this._super(p, {
@@ -166,7 +174,7 @@ Q.Sprite.extend("Goomba",{//seta
       gravity: 1,
       vx: 100             
     });
-    this.add('2d, animation, aiBounce, tween');
+    this.add('2d, animation, aiBounce, tween, defaultEnemy');
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario")) {
           this.die();
@@ -174,11 +182,7 @@ Q.Sprite.extend("Goomba",{//seta
           collision.obj.p.vy = -300;
         }
     });
-    this.on("bump.left,bump.right,bump.bottom",function(collision) {
-        if(collision.obj.isA("Mario")) { 
-            collision.obj.die();
-        }
-    });
+   
     this.on("died", this, "death");
     this.on("nofall", this, "destroy");
   },
@@ -210,7 +214,7 @@ Q.Sprite.extend("Bloopa",{//calamar
       gravity: 0.1,
       death: false 
     });
-    this.add('2d, animation, aiBounce');
+    this.add('2d, animation, aiBounce, defaultEnemy');
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario")) {
           this.death=true;
@@ -220,11 +224,6 @@ Q.Sprite.extend("Bloopa",{//calamar
     });
     this.on("bump.bottom",function(collision) {
       this.p.vy = -100;
-    });
-    this.on("bump.left,bump.right,bump.bottom",function(collision) {
-        if(collision.obj.isA("Mario")) { 
-            collision.obj.die();
-        }
     });
   },
   step: function(dt){
