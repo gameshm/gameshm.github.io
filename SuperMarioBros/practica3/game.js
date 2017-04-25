@@ -38,7 +38,7 @@ Q.animations("bloopa_anim", {
 Q.animations("goomba_anim", {
   move: { frames: [0, 1], rate: 1/2, flip: false, loop: true}, 
   die: { frames: [2], rate: 1, loop: false, trigger:"died"},
-  down: {frames: [3], rate: 4, loop: false, trigger:"nofall"}
+  down: {frames: [3], rate: 2, loop: false, trigger:"nofall"}
 });
 
 Q.animations("coin_anim", {
@@ -131,13 +131,18 @@ Q.Sprite.extend("Coin", {
       sheet:"coin",
       x: 250,
       y: 500, 
-      gravity:0
+      gravity:0,
+      taken:false
     });
     this.add('2d, animation, tween');
     this.p.sensor=true;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
        if(collision.obj.isA("Mario")) { 
         this.up();
+        if(!this.taken){
+          Q.state.inc("score",1);
+          this.taken=true;
+        }
       }
     });
     this.on("toke", this, "destroy");
@@ -145,7 +150,7 @@ Q.Sprite.extend("Coin", {
   up: function(){
     //Q.audio.stop('coin.mp3');
     Q.audio.play('coin.mp3',{ loop: false });
-    this.animate({ x: this.p.x, y: this.p.y-100, angle: 0 }, 0.1);
+    this.animate({ x: this.p.x, y: this.p.y-100, angle: 0, opacity:0.5 }, 0.1);
     this.play("take", 1);
   },
   step: function(){
@@ -187,7 +192,7 @@ Q.Sprite.extend("Goomba",{//seta
     this.on("nofall", this, "destroy");
   },
   death: function(){
-    this.animate({ x: this.p.x, y: this.p.y+300, angle: 0 }, 2);
+    this.animate({ x: this.p.x, y: this.p.y+300, angle: 0 }, 1);
     this.play("down", 1);
   },
   die: function(){this.play("die", 1);},
@@ -202,7 +207,6 @@ Q.Sprite.extend("Goomba",{//seta
   }
 
 });
-
 
 Q.Sprite.extend("Bloopa",{//calamar
   init: function(p) {
@@ -243,6 +247,21 @@ Q.Sprite.extend("Bloopa",{//calamar
   }
 }
 });
+Q.state.on('change.score', function(){
+  console.log("score1");  
+});
+
+Q.scene("score",function(stage) {
+  var container = stage.insert(new Q.UI.Container({
+    x: Q.width/2, y: Q.height/2, fill: "rgba(0,0,0,0.5)"
+  }));
+  var x="score: "+Q.state.get("score");
+
+  container.insert(new Q.UI.Text({x:10, y: -10, label: x }));
+
+});
+
+
 Q.load([ "music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() { 
   Q.audio.play('music_main.mp3',{ loop: true });
 });
@@ -255,7 +274,7 @@ Q.load(["mainTitle.png","princess.png","coin.png","coin.json","mario_small.png",
       });
 
 Q.scene("level1",function(stage) {
-      Q.state=0;
+      
       Q.stageTMX("level.tmx",stage);
       
       var mario = stage.insert(new Q.Mario());
@@ -271,13 +290,12 @@ Q.scene("level1",function(stage) {
       var goomba = stage.insert(new Q.Goomba());
       var bloopa = stage.insert(new Q.Bloopa());
       stage.add("viewport").follow(mario,{ x: true, y: false });
-      //stage.insert(new Q.HUB());
-
 });
  
 Q.loadTMX("level.tmx", function() {
     //Q.stageScene("level1");
     Q.stageScene("menu");
+
 });
 
 Q.scene('endGame',function(stage) {
@@ -293,7 +311,8 @@ Q.scene('endGame',function(stage) {
     Q.clearStages();
     Q.audio.stop();
     Q.audio.play('music_main.mp3',{ loop: true });
-    Q.stageScene('level1');
+    Q.stageScene('level1', 0);
+    Q.stageScene('score', 1);
   });
 
   container.fit(20);
@@ -308,7 +327,9 @@ Q.scene('menu',function(stage) {
   
   button.on("click",function() {
     Q.clearStages();
-    Q.stageScene('level1');
+    Q.state.reset({score:0});
+    Q.stageScene('level1', 0);
+    Q.stageScene('score', 1);
   });
 
 });
