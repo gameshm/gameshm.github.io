@@ -74,11 +74,12 @@ Q.animations("coin_anim", {
 });
 
 Q.animations("thunder_anim", {
-  stand: { frames: [0, 0, 1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 4], rate: 2/10, flip: false, loop: true}
+  stand: { frames: [0, 0, 1, 1, 1, 4, 4, 2, 2, 3, 3, 4, 4], rate: 2/10, flip: false, loop: true},
+  taken: { frames: [4], rate: 1, flip: false, loop: false},
 });
 
 // Global Quintus variables
-Q.state.set({score: 0, hammer: 10});
+Q.state.set({score: 0, hammer: " "});
 
 // ## Player Sprite
 // The very basic player sprite, this is just a normal sprite
@@ -155,7 +156,7 @@ Q.Sprite.extend("Prost",{
 
     this.add('2d, platformerControls, animation');
 
-    Q.input.on("fire",this,"transform");
+    //Q.input.on("fire",this,"transform");
 
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) {
@@ -163,7 +164,12 @@ Q.Sprite.extend("Prost",{
           collision.obj.p.vy = -300;
         }
     });
-
+    var prost = this;
+    Q.state.on("change.hammer", function(){
+      if(Q.state.get("hammer") == "Power of the Mighty Hammer lost. Find it again."){
+        prost.transform();
+      }
+    });
     this.on("died", this, "destroy");
     this.on("setTransforming", this, "shapeShift");
   },
@@ -199,6 +205,7 @@ Q.Sprite.extend("Prost",{
 
   die: function(){
    this.play("die", 1);
+   clearInterval(interval);
    Q.stageScene("endGame",1, { label: "You Died" }); 
    this.del('platformerControls');
   },
@@ -277,10 +284,9 @@ Q.Sprite.extend("Coin", {
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
        if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) { 
         this.up();
-        if(!this.taken){
+        if(!this.p.taken){
           Q.state.inc("score",1);
-          this.taken=true;
-          //console.log("He incrementado score");
+          this.p.taken=true;
         }
       }
     });
@@ -298,7 +304,7 @@ Q.Sprite.extend("Coin", {
 
 });
 
-
+var interval;
 Q.Sprite.extend("Thunder", {
   init:function(){
     this._super({
@@ -306,35 +312,40 @@ Q.Sprite.extend("Thunder", {
       sheet:"thunder",
       x: 200,
       y: 500, 
-      gravity:0
+      gravity:0,
+      state: "thunder",
+      fps: 600,
+      remainingSecs: 10,
+      prost: false
     });
     this.p.w = 32;
     this.p.h = 32;
     this.add('2d, animation, tween');
     this.p.sensor=true;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
-       if(collision.obj.isA("Prost")) { 
+       this.p.prost = collision;
+       if(collision.obj.isA("Prost") && this.p.state == "thunder") { 
           collision.obj.transform();
-          this.destroy();
-          var prost = collision.obj;
-          var secs = 10;
-          var interval = setInterval(function(){
-            Q.state.set("hammer", secs + " secs left!");
-            secs--;
-
-          }, 1000);
-          setTimeout(function(){ 
-            prost.transform();
-            clearInterval(interval);
-            secs = 10; 
-            Q.state.set("hammer", secs + " secs");
-          }, 10000);
+          this.p.state = "taken";
         }
-      
     });
   },
   step: function(){
-    this.play("stand");
+    if(this.p.state == "thunder"){
+      this.play("stand");
+    }
+    else if (this.p.state == "taken" && this.p.remainingSecs >= 0){
+      this.play("taken");
+      if(this.p.fps%60 == 0){
+        Q.state.set("hammer", "Hammer use: "+ this.p.remainingSecs + " secs left!");
+        this.p.remainingSecs--;
+      }
+      this.p.fps--;
+      if(this.p.remainingSecs == -1){
+        Q.state.set("hammer", "Power of the Mighty Hammer lost. Find it again.");
+
+      }
+    }
   }
 
 });
@@ -438,10 +449,10 @@ Q.scene("HUD",function(stage) {
     Q.stageScene("HUD", 1, {text: {label: Q.state.get("hammer")}});
   });
   var hammerSecs = Q.state.get("hammer");
-  var remainingSecs = new Q.UI.Text({x: Q.width/2, y: 90, label: "Hammer use: "+ hammerSecs, color: });
+  var remainingSecs = new Q.UI.Text({x: Q.width/2, y: 90, label: hammerSecs, color: "#707070", outlineWidth: 3});
   stage.insert(remainingSecs);
   var nCoins = Q.state.get("score");
-  var text = new Q.UI.Text({x:80, y: 40, label: "Score: "+ nCoins });
+  var text = new Q.UI.Text({x:80, y: 40, label: "Score: "+ nCoins, color: "#ffc600", outlineWidth: 3, outline: "#ff7200"});
   stage.insert(text);
 });
 
@@ -497,7 +508,7 @@ Q.scene('endGame',function(stage) {
   button.on("click",function() {
     Q.clearStages();
     Q.audio.stop();
-    Q.state.reset({score: 0, hammer: "10 secs"});
+    Q.state.reset({score: 0, hammer: ""});
     //Q.audio.play('music_main.mp3',{ loop: true });
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
@@ -515,7 +526,7 @@ Q.scene('menu',function(stage) {
   
   button.on("click",function() {
     Q.clearStages();
-    Q.state.reset({score: 0, hammer: "10 secs"});
+    Q.state.reset({score: 0, hammer: ""});
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
   });
