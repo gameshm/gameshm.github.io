@@ -37,7 +37,7 @@ Q.animations("prost_anim", {
   jump_left: { frames: [35], rate: 1/10, flip: false },
   stand_right: { frames:[0], rate: 1, flip: false },
   stand_left: { frames: [17], rate: 1, flip: false },
-  die: { frames: [1, 2, 3], rate: 1/10, loop: false, trigger: "died"}
+  die: { frames: [1], rate: 1/10, loop: false, trigger: "died"}
 });
 
 Q.animations("prost_anim_big", {
@@ -53,7 +53,7 @@ Q.animations("prost_anim_big", {
   jump_left: { frames: [37,36,35,34,34,34,34,35, 36, 37], rate: 2/10, flip: false, loop: false },
   throw_right: {},
   throw_left: {},
-  die: { frames: [1, 2, 3], rate: 1/10, loop: false, trigger: "died"}
+  die: { frames: [1], rate: 1/10, loop: false, trigger: "died"}
 });
 
 Q.animations("bloopa_anim", {
@@ -75,11 +75,14 @@ Q.animations("coin_anim", {
 
 Q.animations("thunder_anim", {
   stand: { frames: [0, 0, 1, 1, 1, 4, 4, 2, 2, 3, 3, 4, 4], rate: 2/10, flip: false, loop: true},
-  taken: { frames: [4], rate: 1, flip: false, loop: false},
+  taken: { frames: [3], rate: 1, flip: false, loop: false},
+});
+Q.animations("hammer_anim", {
+  
 });
 
 // Global Quintus variables
-Q.state.set({score: 0, hammer: " "});
+Q.state.set({score: 0, hammer: " ", game: "playing"});
 
 // ## Player Sprite
 // The very basic player sprite, this is just a normal sprite
@@ -153,10 +156,10 @@ Q.Sprite.extend("Prost",{
       transforming: false,
       shape: "dog"             
     });
-
+    this.p.w = 32;
     this.add('2d, platformerControls, animation');
 
-    //Q.input.on("fire",this,"transform");
+    Q.input.on("fire",this,"throw");
 
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) {
@@ -164,20 +167,26 @@ Q.Sprite.extend("Prost",{
           collision.obj.p.vy = -300;
         }
     });
+
+    this.on("hit.Sprite", function(collision) {
+        if(collision.obj.isA("Hammer")) {
+          collision.obj.die();
+        }
+    });
+
     var prost = this;
     Q.state.on("change.hammer", function(){
       if(Q.state.get("hammer") == "Power of the Mighty Hammer lost. Find it again."){
         prost.transform();
       }
     });
-    this.on("died", this, "destroy");
+    //this.on("died", this, "destroy");
     this.on("setTransforming", this, "shapeShift");
   },
   shapeShift: function(){
     this.p.transforming = false;
     if(this.p.shape == "dog"){
       this.p.shape = "humanoid";
-      console.log("Tengo un martillo!");
     }
     else if(this.p.sheet == "prost_transformation"){
       this.p.shape = "dog";
@@ -203,11 +212,38 @@ Q.Sprite.extend("Prost",{
     }
   },
 
+  throw: function(){
+    if(this.p.shape == "humanoid"){
+      //this.play("throw_" + this.p.direction);
+      var vx, dx;
+      var dy = -20;
+      var a;
+      if(this.p.direction == "right"){
+        vx = 300;
+        dx = 30;
+        a = 90;
+      }
+      else{
+        vx = -300;
+        dx = -30;
+        a = -90;
+      }
+      var hammer = new Q.Hammer(this.p.x + dx, this.p.y - dy, vx);
+      this.stage.insert(hammer);
+      hammer.animate({angle: a }, 0.1);
+    }
+  },
+
   die: function(){
-   this.play("die", 1);
-   clearInterval(interval);
-   Q.stageScene("endGame",1, { label: "You Died" }); 
-   this.del('platformerControls');
+    //clearInterval(interval);
+    //Q.state.set("hammer", "You're dead");
+    Q.stageScene("endGame",1, { label: "You died" }); 
+    
+    this.play("die", 1); // Es una animacion de un frame, (siguiente línea)
+    // que luego llama a this.on("died", this, "destroy")
+    //this.del('platformerControls'); // Si borro primero esto, no debería petar
+    this.destroy();
+    Q.state.set("game", "lost");
   },
 
   jump:function(){
@@ -294,7 +330,7 @@ Q.Sprite.extend("Coin", {
   },
   up: function(){
     //Q.audio.stop('coin.mp3');
-    Q.audio.play('coin.mp3',{ loop: false });
+    //Q.audio.play('coin.mp3',{ loop: false });
     this.animate({ x: this.p.x, y: this.p.y-100, angle: 0, opacity:0.5 }, 0.1);
     this.play("take", 1);
   },
@@ -304,7 +340,6 @@ Q.Sprite.extend("Coin", {
 
 });
 
-var interval;
 Q.Sprite.extend("Thunder", {
   init:function(){
     this._super({
@@ -329,12 +364,18 @@ Q.Sprite.extend("Thunder", {
           this.p.state = "taken";
         }
     });
+    var thunder = this;
+    Q.state.on("change.game", function(){
+      if(Q.state.get("game") == "lost"){
+        thunder.destroy();
+      }
+    });
   },
   step: function(){
     if(this.p.state == "thunder"){
       this.play("stand");
     }
-    else if (this.p.state == "taken" && this.p.remainingSecs >= 0){
+    else if (this.p.state == "taken" && this.p.remainingSecs >= 0 && Q.state.get("hammer") != "You're dead"){
       this.play("taken");
       if(this.p.fps%60 == 0){
         Q.state.set("hammer", "Hammer use: "+ this.p.remainingSecs + " secs left!");
@@ -343,9 +384,69 @@ Q.Sprite.extend("Thunder", {
       this.p.fps--;
       if(this.p.remainingSecs == -1){
         Q.state.set("hammer", "Power of the Mighty Hammer lost. Find it again.");
-
+        this.p.state == "wasted";
+        this.destroy();
       }
     }
+  }
+
+});
+
+
+Q.Sprite.extend("Hammer", {
+  init:function(paramX, paramY, paramVx, paramVy){
+    this._super({
+      sprite:"hammer_anim",
+      sheet:"hammer",
+      x: paramX,
+      y: paramY,
+      vx: paramVx, 
+      gravity:0.2,
+      stage: "going"
+    });
+    this.add('2d, animation, tween');
+    this.p.sensor=true;
+    this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
+      if(collision.obj.isA("Goomba") || collision.obj.isA("Bloopa") && this.p.stage == "going") { 
+          collision.obj.die();
+          this.p.stage = "returning";
+          this.p.vx = -paramVx;
+          var a = (this.p.direction == "right" ? 90 : -90);
+          this.animate({angle: a}, 0.3);
+      }
+      if(collision.obj.isA("Prost") && this.p.stage == "returning") { 
+          this.die();
+          console.log("he tocado mjolnir");
+      }
+    });
+    var hammer = this;
+    Q.state.on("change.game", function(){
+      if(Q.state.get("game") == "lost"){
+        hammer.destroy();
+      }
+    });
+  },
+
+  die: function(){
+    this.destroy();
+  },
+
+  step: function(dt){/*
+    if(this.p.state == "thunder"){
+      this.play("stand");
+    }
+    else if (this.p.state == "taken" && this.p.remainingSecs >= 0 && Q.state.get("hammer") != "You're dead"){
+      this.play("taken");
+      if(this.p.fps%60 == 0){
+        Q.state.set("hammer", "Hammer use: "+ this.p.remainingSecs + " secs left!");
+        this.p.remainingSecs--;
+      }
+      this.p.fps--;
+      if(this.p.remainingSecs == -1){
+        Q.state.set("hammer", "Power of the Mighty Hammer lost. Find it again.");
+        this.p.state == "wasted";
+      }
+    }*/
   }
 
 });
@@ -355,6 +456,9 @@ Q.component("defaultEnemy",{
     this.entity.on("bump.left, bump.right, bump.bottom",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) { 
             collision.obj.die();
+        }
+        if(collision.obj.isA("Hammer")){
+          this.destroy();
         }
     });
   }
@@ -413,13 +517,16 @@ Q.Sprite.extend("Bloopa",{//calamar
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) {
           this.death=true;
-          this.play("down", 1);
+          this.die();
           collision.obj.p.vy = -300;
         }
     });
     this.on("bump.bottom",function(collision) {
       this.p.vy = -100;
     });
+  },
+  die: function(){
+    this.play("down", 1);
   },
   step: function(dt){
     if(!this.death){
@@ -461,8 +568,9 @@ Q.load([ "music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() 
   //Q.audio.play('music_main.mp3',{ loop: true });
 });
 
-Q.load(["thunder.png", "thunder.json", "prost_small.png", "prost.json", "mainTitle.png","princess.png","coin.png","coin.json","mario_small.png", "mario_small.json", "goomba.png", "goomba.json", "bloopa.png", "bloopa.json"], function(){
+Q.load(["hammer.png", "hammer.json", "thunder.png", "thunder.json", "prost_small.png", "prost.json", "mainTitle.png","princess.png","coin.png","coin.json","mario_small.png", "mario_small.json", "goomba.png", "goomba.json", "bloopa.png", "bloopa.json"], function(){
         Q.compileSheets("prost_small.png", "prost.json");
+        Q.compileSheets("hammer.png", "hammer.json");
         Q.compileSheets("thunder.png", "thunder.json");
         Q.compileSheets("mario_small.png", "mario_small.json");
         Q.compileSheets("goomba.png", "goomba.json");
@@ -489,7 +597,7 @@ Q.scene("level1",function(stage) {
       var bloopa = stage.insert(new Q.Bloopa());
       stage.add("viewport").follow(prost,{ x: true, y: false });
 });
- 
+
 Q.loadTMX("level.tmx", function() {
     //Q.stageScene("level1");
     Q.stageScene("menu");
@@ -508,7 +616,7 @@ Q.scene('endGame',function(stage) {
   button.on("click",function() {
     Q.clearStages();
     Q.audio.stop();
-    Q.state.reset({score: 0, hammer: ""});
+    Q.state.reset({score: 0, hammer: " ", game: "playing"});
     //Q.audio.play('music_main.mp3',{ loop: true });
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
@@ -526,7 +634,7 @@ Q.scene('menu',function(stage) {
   
   button.on("click",function() {
     Q.clearStages();
-    Q.state.reset({score: 0, hammer: ""});
+    Q.state.reset({score: 0, hammer: " ", game: "playing"});
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
   });
