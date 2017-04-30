@@ -22,9 +22,6 @@
    </objectgroup>
   </tile>
  </tileset>
- <imagelayer name="background" offsetx="-10" offsety="-10">
-  <image source="../images/bg.png" width="800" height="600"/>
- </imagelayer>
  <layer name="Collision" width="150" height="20" offsetx="12" offsety="-13">
   <properties>
    <property name="collision" value="true"/>

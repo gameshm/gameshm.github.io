@@ -41,6 +41,7 @@ Q.animations("prost_anim", {
 });
 
 Q.animations("prost_anim_big", {
+  
   transform_right: {frames: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19], rate: 1/10, flip: false, loop: false, trigger: "setTransforming"},
   transform_left: {frames: [39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20], rate: 1/10, flip: false, loop: false, trigger: "setTransforming"},
   transform_back_right: {frames: [15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0], rate: 1/30, flip: false, loop: false, trigger: "setTransforming"},
@@ -75,7 +76,7 @@ Q.animations("coin_anim", {
 
 Q.animations("thunder_anim", {
   stand: { frames: [0, 0, 1, 1, 1, 4, 4, 2, 2, 3, 3, 4, 4], rate: 2/10, flip: false, loop: true},
-  taken: { frames: [3], rate: 1, flip: false, loop: false},
+  taken: { frames: [4], rate: 1, flip: false, loop: false},
 });
 Q.animations("hammer_anim", {
   
@@ -154,7 +155,8 @@ Q.Sprite.extend("Prost",{
       y: 500,           // be overridden on object creation
       gravity: 0.6,
       transforming: false,
-      shape: "dog"             
+      shape: "dog",
+      hammer: false             
     });
     this.p.w = 32;
     this.add('2d, platformerControls, animation');
@@ -178,6 +180,7 @@ Q.Sprite.extend("Prost",{
     Q.state.on("change.hammer", function(){
       if(Q.state.get("hammer") == "Power of the Mighty Hammer lost. Find it again."){
         prost.transform();
+        this.p.hammer = false;
       }
     });
     //this.on("died", this, "destroy");
@@ -187,6 +190,7 @@ Q.Sprite.extend("Prost",{
     this.p.transforming = false;
     if(this.p.shape == "dog"){
       this.p.shape = "humanoid";
+      this.p.hammer = true;
     }
     else if(this.p.sheet == "prost_transformation"){
       this.p.shape = "dog";
@@ -212,8 +216,12 @@ Q.Sprite.extend("Prost",{
     }
   },
 
+  retrieveHammer: function(){
+    this.p.hammer = true;
+  },
+
   throw: function(){
-    if(this.p.shape == "humanoid"){
+    if(this.p.shape == "humanoid" && this.p.hammer){
       //this.play("throw_" + this.p.direction);
       var vx, dx;
       var dy = -20;
@@ -231,6 +239,7 @@ Q.Sprite.extend("Prost",{
       var hammer = new Q.Hammer(this.p.x + dx, this.p.y - dy, vx);
       this.stage.insert(hammer);
       hammer.animate({angle: a }, 0.1);
+      this.p.hammer = false;
     }
   },
 
@@ -272,12 +281,10 @@ Q.Sprite.extend("Prost",{
         this.play("walk_left"); 
       } 
       else
-        this.play("stand_" + this.p.direction + "_t");
-      
+        this.play("stand_" + this.p.direction + "_t");  
     }
-    
-    
-    if(this.p.y> 550){
+
+    if(this.p.y> 750){
       this.die();
     }
   }
@@ -306,12 +313,12 @@ Q.Sprite.extend("Princess", {
 });
 
 Q.Sprite.extend("Coin", {
-  init:function(){
+  init:function(paramX, paramY){
     this._super({
       sprite:"coin_anim",
       sheet:"coin",
-      x: 250,
-      y: 500, 
+      x: paramX,
+      y: paramY, 
       gravity:0,
       taken:false
     });
@@ -319,8 +326,8 @@ Q.Sprite.extend("Coin", {
     this.p.sensor=true;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
        if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) { 
-        this.up();
         if(!this.p.taken){
+          this.up();
           Q.state.inc("score",1);
           this.p.taken=true;
         }
@@ -362,6 +369,7 @@ Q.Sprite.extend("Thunder", {
        if(collision.obj.isA("Prost") && this.p.state == "thunder") { 
           collision.obj.transform();
           this.p.state = "taken";
+          this.p.y = 50;
         }
     });
     var thunder = this;
@@ -416,6 +424,7 @@ Q.Sprite.extend("Hammer", {
       }
       if(collision.obj.isA("Prost") && this.p.stage == "returning") { 
           this.die();
+          collision.obj.retrieveHammer();
           console.log("he tocado mjolnir");
       }
     });
@@ -568,7 +577,7 @@ Q.load([ "music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() 
   //Q.audio.play('music_main.mp3',{ loop: true });
 });
 
-Q.load(["hammer.png", "hammer.json", "thunder.png", "thunder.json", "prost_small.png", "prost.json", "mainTitle.png","princess.png","coin.png","coin.json","mario_small.png", "mario_small.json", "goomba.png", "goomba.json", "bloopa.png", "bloopa.json"], function(){
+Q.load(["galaxy.png", "hammer.png", "hammer.json", "thunder.png", "thunder.json", "prost_small.png", "prost.json", "mainTitle.png","princess.png","coin.png","coin.json","mario_small.png", "mario_small.json", "goomba.png", "goomba.json", "bloopa.png", "bloopa.json", "bgProst.png"], function(){
         Q.compileSheets("prost_small.png", "prost.json");
         Q.compileSheets("hammer.png", "hammer.json");
         Q.compileSheets("thunder.png", "thunder.json");
@@ -579,17 +588,14 @@ Q.load(["hammer.png", "hammer.json", "thunder.png", "thunder.json", "prost_small
       });
 
 Q.scene("level1",function(stage) {
-      
-      Q.stageTMX("level.tmx",stage);
-      
+      stage.insert(new Q.Repeater({ asset: "bgProst.png", speedX: 0.2, speedY: 0.2, type: 0 }));
+      //stage.insert(new Q.Repeater({ asset: "galaxy.png", speedX: 0.5, speedY: 0.5, type: 0 }));
+      Q.stageTMX("levelProst.tmx",stage);
       //var mario = stage.insert(new Q.Mario());
       var prost = stage.insert(new Q.Prost());
-      var coin =[];
 
       for(var i=0; i<purse.length; i++){
-        coin[i]= stage.insert(new Q.Coin());
-        coin[i].p.x=purse[i].x;
-        coin[i].p.y=purse[i].y;
+        stage.insert(new Q.Coin(purse[i].x, purse[i].y));
       }
       var thunder = stage.insert(new Q.Thunder());
       var princess=stage.insert(new Q.Princess());
@@ -598,7 +604,7 @@ Q.scene("level1",function(stage) {
       stage.add("viewport").follow(prost,{ x: true, y: false });
 });
 
-Q.loadTMX("level.tmx", function() {
+Q.loadTMX("levelProst.tmx", function() {
     //Q.stageScene("level1");
     Q.stageScene("menu");
     //Q.debug = true;
@@ -611,8 +617,8 @@ Q.scene('endGame',function(stage) {
 
   var button = container.insert(new Q.UI.Button({ x: 0, y: 0, fill: "#CCCCCC",
                                                   label: "Play Again" }));         
-  var label = container.insert(new Q.UI.Text({x:10, y: -10 - button.p.h, 
-                                                   label: stage.options.label }));
+  var label = container.insert(new Q.UI.Text({x:5, y: -10 - button.p.h, 
+                                                   label: stage.options.label, color: "#FFFFFF" }));
   button.on("click",function() {
     Q.clearStages();
     Q.audio.stop();

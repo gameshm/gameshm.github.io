@@ -411,9 +411,9 @@ Quintus.Input = function(Q) {
       if(!hasTouch) { return false; }
 
       var joypad = Q.joypad = Q._defaults(opts || {},{
-        size: 50,
+        size: 20,
         trigger: 20,
-        center: 25,
+        center: 10,
         color: "#CCC",
         background: "#000",
         alpha: 0.5,
