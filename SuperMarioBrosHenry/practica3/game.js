@@ -83,7 +83,7 @@ Q.animations("hammer_anim", {
 });
 
 // Global Quintus variables
-Q.state.set({score: 0, hammer: " ", game: "playing"});
+Q.state.set({score: 0, hammer: " ", game: "playing", lifePoints: 5});
 
 // ## Player Sprite
 // The very basic player sprite, this is just a normal sprite
@@ -118,7 +118,7 @@ Q.Sprite.extend("Mario",{
   die: function(){
    this.play("die", 1);
    Q.stageScene("endGame",1, { label: "You Died" });
-   this.del('platformerControls');
+   //this.del('platformerControls');
   },
 
   jump:function(){
@@ -183,6 +183,9 @@ Q.Sprite.extend("Prost",{
         this.p.hammer = false;
       }
     });
+    Q.state.on("change.lifePoints", function(){
+      Q.stageScene("HUD", 1, {life: {label: Q.state.get("lifePoints")}});
+    });
     //this.on("died", this, "destroy");
     this.on("setTransforming", this, "shapeShift");
   },
@@ -209,10 +212,12 @@ Q.Sprite.extend("Prost",{
       this.size(true);
       Q._generatePoints(this, false);
       this.play("transform_" + this.p.direction);
+      Q.audio.play("Hammer.mp3");
     }
     else if (this.p.shape == "humanoid"){
       this.p.transforming = true;
       this.play("transform_back_" + this.p.direction);
+      Q.audio.stop("Hammer.mp3");
     }
   },
 
@@ -244,15 +249,27 @@ Q.Sprite.extend("Prost",{
   },
 
   die: function(){
-    //clearInterval(interval);
-    //Q.state.set("hammer", "You're dead");
-    Q.stageScene("endGame",1, { label: "You died" }); 
-    
-    this.play("die", 1); // Es una animacion de un frame, (siguiente línea)
+    //Q.state.set("hammer", "You're dead");    
+    //this.play("die", 1); // Es una animacion de un frame, (siguiente línea)
     // que luego llama a this.on("died", this, "destroy")
-    //this.del('platformerControls'); // Si borro primero esto, no debería petar
-    this.destroy();
-    Q.state.set("game", "lost");
+    if(Q.state.get("lifePoints") > 0){
+      Q.state.set("lifePoints", Q.state.get("lifePoints") - 1);
+      //this.p.sprite = "prost_anim";
+      //this.p.sheet = "prost";  // Setting a sprite sheet sets sprite width and height
+      this.p.x = 70;           // You can also set additional properties that can
+      this.p.y = 500;           // be overridden on object creation
+      //this.p.transforming = false;
+      //this.p.shape = "dog";
+      //this.p.hammer = false; 
+    }
+    if(Q.state.get("lifePoints") <= 0){
+      if(Q.state.get("game") != "lost"){
+        Q.stageScene("endGame",1, { label: "You died" }); 
+        //this.del('platformerControls');
+        this.destroy();
+        Q.state.set("game", "lost");
+      }
+    }
   },
 
   jump:function(){
@@ -286,9 +303,8 @@ Q.Sprite.extend("Prost",{
 
     if(this.p.y> 750){
       this.die();
-    }
+    }    
   }
-
 });
 
 Q.Sprite.extend("Princess", {
@@ -302,11 +318,12 @@ Q.Sprite.extend("Princess", {
     this.add('2d');
     this.p.sensor=true;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
-      if(collision.obj.isA("Mario") || collision.obj.isA("Prost")){
+      if((collision.obj.isA("Mario") || collision.obj.isA("Prost")) && Q.state.get("game") != "won"){
         Q.stageScene("endGame",1, { label: "You win" }); 
         Q.audio.stop('music_main.mp3');
-        Q.audio.play('music_level_complete.mp3',{ loop: false });
-        collision.obj.del('platformerControls');
+        Q.audio.play('Victory.mp3',{ loop: false });
+        //collision.obj.del('platformerControls');
+        Q.state.set("game", "won");
       }
     });
   }
@@ -334,10 +351,13 @@ Q.Sprite.extend("Coin", {
       }
     });
     this.on("toke", this, "destroy");
+    Q.state.on('change.score', function(){
+      Q.stageScene("HUD", 1, {text: {label: Q.state.get("score")}}); 
+    });
   },
   up: function(){
-    //Q.audio.stop('coin.mp3');
-    //Q.audio.play('coin.mp3',{ loop: false });
+    Q.audio.stop('coin.mp3');
+    Q.audio.play('coin.mp3',{ loop: false });
     this.animate({ x: this.p.x, y: this.p.y-100, angle: 0, opacity:0.5 }, 0.1);
     this.play("take", 1);
   },
@@ -348,12 +368,12 @@ Q.Sprite.extend("Coin", {
 });
 
 Q.Sprite.extend("Thunder", {
-  init:function(){
+  init:function(paramX, paramY){
     this._super({
       sprite:"thunder_anim",
       sheet:"thunder",
-      x: 200,
-      y: 500, 
+      x: paramX,
+      y: paramY, 
       gravity:0,
       state: "thunder",
       fps: 600,
@@ -378,6 +398,9 @@ Q.Sprite.extend("Thunder", {
         thunder.destroy();
       }
     });
+    Q.state.on("change.hammer", function(){
+      Q.stageScene("HUD", 1, {remainingSecs: {label: Q.state.get("hammer")}});
+    });
   },
   step: function(){
     if(this.p.state == "thunder"){
@@ -390,7 +413,7 @@ Q.Sprite.extend("Thunder", {
         this.p.remainingSecs--;
       }
       this.p.fps--;
-      if(this.p.remainingSecs == -1){
+      if(this.p.remainingSecs < 0){
         Q.state.set("hammer", "Power of the Mighty Hammer lost. Find it again.");
         this.p.state == "wasted";
         this.destroy();
@@ -440,22 +463,7 @@ Q.Sprite.extend("Hammer", {
     this.destroy();
   },
 
-  step: function(dt){/*
-    if(this.p.state == "thunder"){
-      this.play("stand");
-    }
-    else if (this.p.state == "taken" && this.p.remainingSecs >= 0 && Q.state.get("hammer") != "You're dead"){
-      this.play("taken");
-      if(this.p.fps%60 == 0){
-        Q.state.set("hammer", "Hammer use: "+ this.p.remainingSecs + " secs left!");
-        this.p.remainingSecs--;
-      }
-      this.p.fps--;
-      if(this.p.remainingSecs == -1){
-        Q.state.set("hammer", "Power of the Mighty Hammer lost. Find it again.");
-        this.p.state == "wasted";
-      }
-    }*/
+  step: function(dt){
   }
 
 });
@@ -474,12 +482,12 @@ Q.component("defaultEnemy",{
 });
 
 Q.Sprite.extend("Goomba",{//seta
-  init: function(p) {
+  init: function(paramX, paramY, p) {
     this._super(p, {
       sprite: "goomba_anim",
       sheet: "goomba",  // Setting a sprite sheet sets sprite width and height
-      x: 250,           // You can also set additional properties that can
-      y: 380,           // be overridden on object creation
+      x: paramX,           // You can also set additional properties that can
+      y: paramY,           // be overridden on object creation
       gravity: 1,
       vx: 100             
     });
@@ -503,29 +511,25 @@ Q.Sprite.extend("Goomba",{//seta
   
   step: function(dt){
     this.play("move");
-    if(this.p.y > 550){
-      this.p.x = 150;
-      this.p.y = 380;
-      this.p.vy = 0;
+    if(this.p.y > 750){
+      this.destroy();
     }
   }
 
 });
 
 Q.Sprite.extend("Bloopa",{//calamar
-  init: function(p) {
+  init: function(paramX, paramY, p) {
     this._super(p, {
       sprite: "bloopa_anim",
       sheet: "bloopa",  // Setting a sprite sheet sets sprite width and height
-      x: 350,           // You can also set additional properties that can
-      y: 380,           // be overridden on object creation
-      gravity: 0.1,
-      death: false 
+      x: paramX,           // You can also set additional properties that can
+      y: paramY,           // be overridden on object creation
+      gravity: 0.1
     });
     this.add('2d, animation, aiBounce, defaultEnemy');
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) {
-          this.death=true;
           this.die();
           collision.obj.p.vy = -300;
         }
@@ -536,9 +540,9 @@ Q.Sprite.extend("Bloopa",{//calamar
   },
   die: function(){
     this.play("down", 1);
+    //this.animate({ x: this.p.x, y: this.p.y+300, angle: 0 }, 1);
   },
   step: function(dt){
-    if(!this.death){
     if(this.vy>0){
       this.play("down");
     }else if(this.vy<0){
@@ -546,34 +550,33 @@ Q.Sprite.extend("Bloopa",{//calamar
     }else
       this.play("stand");
 
-    if(this.p.y > 550){
-      this.p.x = 150;
-      this.p.y = 380;
-      this.p.vy = 200;
+    if(this.p.y > 750){
+      this.destroy();
     }
-  }
 }
 });
 
-
-
 Q.scene("HUD",function(stage) {
-  Q.state.on('change.score', function(){
-    Q.stageScene("HUD", 1, {text: {label: Q.state.get("score")}}); 
-  });
-  Q.state.on("change.hammer", function(){
-    Q.stageScene("HUD", 1, {text: {label: Q.state.get("hammer")}});
-  });
+
+  
+  // Contador descendente del poder del martillo
   var hammerSecs = Q.state.get("hammer");
   var remainingSecs = new Q.UI.Text({x: Q.width/2, y: 90, label: hammerSecs, color: "#707070", outlineWidth: 3});
   stage.insert(remainingSecs);
+
+  // Contador ascendente de puntos por monedas
   var nCoins = Q.state.get("score");
   var text = new Q.UI.Text({x:80, y: 40, label: "Score: "+ nCoins, color: "#ffc600", outlineWidth: 3, outline: "#ff7200"});
   stage.insert(text);
+
+  // Contador descendente de puntos de vida
+  var lifePoints = Q.state.get("lifePoints");
+  var life =new Q.UI.Text({x:110, y: 70, label: "Life points: "+ lifePoints, color: "#ffc600", outlineWidth: 3, outline: "#ff7200"});
+  stage.insert(life);
 });
 
 
-Q.load([ "music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() { 
+Q.load([ "Hammer.mp3", "Victory.mp3","music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() { 
   //Q.audio.play('music_main.mp3',{ loop: true });
 });
 
@@ -597,10 +600,26 @@ Q.scene("level1",function(stage) {
       for(var i=0; i<purse.length; i++){
         stage.insert(new Q.Coin(purse[i].x, purse[i].y));
       }
-      var thunder = stage.insert(new Q.Thunder());
+      var thunder = stage.insert(new Q.Thunder(200, 500));
+      //var thunder2 = stage.insert(new Q.Thunder(240, 500));
+      
+      var goomba = stage.insert(new Q.Goomba(250, 380));
+      var bloopa = stage.insert(new Q.Bloopa(350, 380));
+
+      var goomba = stage.insert(new Q.Goomba(1350, 380));
+      var bloopa = stage.insert(new Q.Bloopa(1450, 280));
+
+      var goomba = stage.insert(new Q.Goomba(1550, 380));
+
+      var thunder2 = stage.insert(new Q.Thunder(1750, 350));
+
+      var goomba = stage.insert(new Q.Goomba(1750, 320));
+      var goomba = stage.insert(new Q.Goomba(1850, 320));
+
+      var goomba = stage.insert(new Q.Goomba(2150, 320));
+
       var princess=stage.insert(new Q.Princess());
-      var goomba = stage.insert(new Q.Goomba());
-      var bloopa = stage.insert(new Q.Bloopa());
+
       stage.add("viewport").follow(prost,{ x: true, y: false });
 });
 
@@ -622,7 +641,7 @@ Q.scene('endGame',function(stage) {
   button.on("click",function() {
     Q.clearStages();
     Q.audio.stop();
-    Q.state.reset({score: 0, hammer: " ", game: "playing"});
+    Q.state.reset({score: 0, hammer: " ", game: "playing", lifePoints: 5});
     //Q.audio.play('music_main.mp3',{ loop: true });
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
@@ -640,7 +659,7 @@ Q.scene('menu',function(stage) {
   
   button.on("click",function() {
     Q.clearStages();
-    Q.state.reset({score: 0, hammer: " ", game: "playing"});
+    Q.state.reset({score: 0, hammer: " ", game: "playing", lifePoints: 5});
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
   });
