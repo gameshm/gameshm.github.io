@@ -79,11 +79,19 @@ Q.animations("thunder_anim", {
   taken: { frames: [4], rate: 1, flip: false, loop: false},
 });
 Q.animations("hammer_anim", {
-  
+  still: { frames: [0], rate: 1, flip: false, loop: false},
+  hit: { frames: [0,1,0,1,0,1,0], rate: 2/10, flip: false, loop: false, next: "still"}
 });
 
 // Global Quintus variables
-Q.state.set({score: 0, hammer: " ", game: "playing", lifePoints: 5});
+Q.state.set({
+  score: 0,
+  hammer: " ",
+  game: "playing",
+  lifePoints: 5,
+  prostX: 0,
+  prostY: 0
+});
 
 // ## Player Sprite
 // The very basic player sprite, this is just a normal sprite
@@ -200,6 +208,7 @@ Q.Sprite.extend("Prost",{
       this.p.sheet = "prost";
       this.p.sprite = "prost_anim";
       this.size(true);
+      Q.audio.play("Woof.mp3");
       Q._generatePoints(this, false);
     }
     
@@ -241,6 +250,8 @@ Q.Sprite.extend("Prost",{
         dx = -30;
         a = -90;
       }
+      Q.state.set("prostX", this.p.x);
+      Q.state.set("prostY", this.p.y);
       var hammer = new Q.Hammer(this.p.x + dx, this.p.y - dy, vx);
       this.stage.insert(hammer);
       hammer.animate({angle: a }, 0.1);
@@ -316,7 +327,7 @@ Q.Sprite.extend("Princess", {
       gravity:1
     });
     this.add('2d');
-    this.p.sensor=true;
+    //this.p.sensor=true;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
       if((collision.obj.isA("Mario") || collision.obj.isA("Prost")) && Q.state.get("game") != "won"){
         Q.stageScene("endGame",1, { label: "You win" }); 
@@ -356,8 +367,10 @@ Q.Sprite.extend("Coin", {
     });
   },
   up: function(){
-    Q.audio.stop('coin.mp3');
-    Q.audio.play('coin.mp3',{ loop: false });
+    //Q.audio.stop('coin.mp3');
+    Q.audio.stop("Woof.mp3");
+    Q.audio.play("Woof.mp3");
+    //Q.audio.play('coin.mp3',{ loop: false });
     this.animate({ x: this.p.x, y: this.p.y-100, angle: 0, opacity:0.5 }, 0.1);
     this.play("take", 1);
   },
@@ -383,7 +396,7 @@ Q.Sprite.extend("Thunder", {
     this.p.w = 32;
     this.p.h = 32;
     this.add('2d, animation, tween');
-    this.p.sensor=true;
+    this.p.sensor = true;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
        this.p.prost = collision;
        if(collision.obj.isA("Prost") && this.p.state == "thunder") { 
@@ -433,22 +446,30 @@ Q.Sprite.extend("Hammer", {
       y: paramY,
       vx: paramVx, 
       gravity:0.2,
-      stage: "going"
+      stage: "going",
+      meters: 0
     });
     this.add('2d, animation, tween');
     this.p.sensor=true;
+    this.p.h = 16;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
       if(collision.obj.isA("Goomba") || collision.obj.isA("Bloopa") && this.p.stage == "going") { 
           collision.obj.die();
-          this.p.stage = "returning";
-          this.p.vx = -paramVx;
-          var a = (this.p.direction == "right" ? 90 : -90);
-          this.animate({angle: a}, 0.3);
+          this.play("hit");
+          Q.audio.play("metalBang.mp3");
       }
       if(collision.obj.isA("Prost") && this.p.stage == "returning") { 
           this.die();
           collision.obj.retrieveHammer();
-          console.log("he tocado mjolnir");
+      }
+    });
+    this.on("bump.right, bump.left", function(collision){
+      if(this.p.stage == "going"){
+          this.p.stage = "returning";
+          this.p.vx = -paramVx;
+          var a = (this.p.direction == "right" ? 90 : -90);
+          this.animate({angle: a}, 0.2);
+          this.animate({x: Q.state.get("prostX"), y: Q.state.get("prostY") + 15}, 0.5);
       }
     });
     var hammer = this;
@@ -464,6 +485,13 @@ Q.Sprite.extend("Hammer", {
   },
 
   step: function(dt){
+    this.p.meters++;
+    if(this.p.meters >= 25){ // Si se pasa de rango, hacemos que vuelva a Prost
+      var a = (this.p.direction == "right" ? 90 : -90);
+      this.animate({angle: a}, 0.2);
+      this.animate({x: Q.state.get("prostX"), y: Q.state.get("prostY") + 15}, 1);
+      this.p.meters = 0;
+    }
   }
 
 });
@@ -525,13 +553,13 @@ Q.Sprite.extend("Bloopa",{//calamar
       sheet: "bloopa",  // Setting a sprite sheet sets sprite width and height
       x: paramX,           // You can also set additional properties that can
       y: paramY,           // be overridden on object creation
+      vx: 20,
       gravity: 0.1
     });
     this.add('2d, animation, aiBounce, defaultEnemy');
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) {
           this.die();
-          collision.obj.p.vy = -300;
         }
     });
     this.on("bump.bottom",function(collision) {
@@ -540,6 +568,10 @@ Q.Sprite.extend("Bloopa",{//calamar
   },
   die: function(){
     this.play("down", 1);
+    this.del('aiBounce');
+    this.off("bump.bottom");
+    this.p.vx = 0;
+    this.del("defaultEnemy");
     //this.animate({ x: this.p.x, y: this.p.y+300, angle: 0 }, 1);
   },
   step: function(dt){
@@ -576,7 +608,7 @@ Q.scene("HUD",function(stage) {
 });
 
 
-Q.load([ "Hammer.mp3", "Victory.mp3","music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() { 
+Q.load(["Woof.mp3", "metalBang.mp3", "Hammer.mp3", "Victory.mp3","music_main.mp3", "coin.mp3", "music_level_complete.mp3" ], function() { 
   //Q.audio.play('music_main.mp3',{ loop: true });
 });
 
@@ -600,7 +632,7 @@ Q.scene("level1",function(stage) {
       for(var i=0; i<purse.length; i++){
         stage.insert(new Q.Coin(purse[i].x, purse[i].y));
       }
-      var thunder = stage.insert(new Q.Thunder(200, 500));
+      var thunder = stage.insert(new Q.Thunder(200, 510));
       //var thunder2 = stage.insert(new Q.Thunder(240, 500));
       
       var goomba = stage.insert(new Q.Goomba(250, 380));
@@ -611,7 +643,7 @@ Q.scene("level1",function(stage) {
 
       var goomba = stage.insert(new Q.Goomba(1550, 380));
 
-      var thunder2 = stage.insert(new Q.Thunder(1750, 350));
+      var thunder2 = stage.insert(new Q.Thunder(1750, 370));
 
       var goomba = stage.insert(new Q.Goomba(1750, 320));
       var goomba = stage.insert(new Q.Goomba(1850, 320));
