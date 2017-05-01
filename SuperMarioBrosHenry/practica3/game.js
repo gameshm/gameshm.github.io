@@ -59,7 +59,7 @@ Q.animations("prost_anim_big", {
 
 Q.animations("bloopa_anim", {
   stand: { frames: [0], rate: 1/10, flip: false}, 
-  up: { frames: [1], rate: 1/10, flip:false}, 
+  up: { frames: [1,1], rate: 2/10, flip:false, next: "stand"}, 
   down: { frames: [2], rate: 1/10, flip: false }
 });
 
@@ -90,7 +90,8 @@ Q.state.set({
   game: "playing",
   lifePoints: 5,
   prostX: 0,
-  prostY: 0
+  prostY: 0,
+  hint: "Hint: find the power of the Gods"
 });
 
 // ## Player Sprite
@@ -170,7 +171,7 @@ Q.Sprite.extend("Prost",{
     this.add('2d, platformerControls, animation');
 
     Q.input.on("fire",this,"throw");
-
+    Q.input.on("S", this, "coordinates");
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) {
           this.destroy(); 
@@ -194,6 +195,9 @@ Q.Sprite.extend("Prost",{
     Q.state.on("change.lifePoints", function(){
       Q.stageScene("HUD", 1, {life: {label: Q.state.get("lifePoints")}});
     });
+    Q.state.on("change.hint", function(){
+      Q.stageScene("HUD", 1, {hint: {label: Q.state.get("hint")}});
+    });
     //this.on("died", this, "destroy");
     this.on("setTransforming", this, "shapeShift");
   },
@@ -202,6 +206,7 @@ Q.Sprite.extend("Prost",{
     if(this.p.shape == "dog"){
       this.p.shape = "humanoid";
       this.p.hammer = true;
+      Q.state.set("hint", "Hint: press Space to throw the Mighty Hammer");
     }
     else if(this.p.sheet == "prost_transformation"){
       this.p.shape = "dog";
@@ -209,7 +214,16 @@ Q.Sprite.extend("Prost",{
       this.p.sprite = "prost_anim";
       this.size(true);
       Q.audio.play("Woof.mp3");
-      Q._generatePoints(this, false);
+      //Q._generatePoints(this, true);
+      this.p.w = 32;
+      this.p.h = 32;
+      this.c.h = this.c.h/2;
+      this.c.y = this.c.y + this.p.h/2;
+      Q._generateCollisionPoints(this);
+      Q._generatePoints(this,true);
+
+
+      Q.state.set("hint", "Hint: find the power of the Gods");
     }
     
   },
@@ -219,7 +233,12 @@ Q.Sprite.extend("Prost",{
       this.p.sprite = "prost_anim_big";
       this.p.transforming = true;
       this.size(true);
-      Q._generatePoints(this, false);
+      this.c.h = this.c.h/2;
+      this.p.w = 32;
+      this.p.h = 60;
+      this.c.y = this.c.y + this.p.h/2;
+      Q._generateCollisionPoints(this);
+      Q._generatePoints(this,true);
       this.play("transform_" + this.p.direction);
       Q.audio.play("Hammer.mp3");
     }
@@ -315,6 +334,11 @@ Q.Sprite.extend("Prost",{
     if(this.p.y> 750){
       this.die();
     }    
+  },
+
+  coordinates: function(){ // For debug purposes only
+    console.log("x: " + this.p.x);
+    console.log("y: " + this.p.y);
   }
 });
 
@@ -419,7 +443,7 @@ Q.Sprite.extend("Thunder", {
     if(this.p.state == "thunder"){
       this.play("stand");
     }
-    else if (this.p.state == "taken" && this.p.remainingSecs >= 0 && Q.state.get("hammer") != "You're dead"){
+    else if (this.p.state == "taken" && this.p.remainingSecs >= 0 && Q.state.get("hammer") != "You're dead" && Q.state.get("game") != "won"){
       this.play("taken");
       if(this.p.fps%60 == 0){
         Q.state.set("hammer", "Hammer use: "+ this.p.remainingSecs + " secs left!");
@@ -453,7 +477,7 @@ Q.Sprite.extend("Hammer", {
     this.p.sensor=true;
     this.p.h = 16;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
-      if(collision.obj.isA("Goomba") || collision.obj.isA("Bloopa") && this.p.stage == "going") { 
+      if((collision.obj.isA("Goomba") || collision.obj.isA("Bloopa")) && this.p.stage == "going") { 
           collision.obj.die();
           this.play("hit");
           Q.audio.play("metalBang.mp3");
@@ -564,6 +588,7 @@ Q.Sprite.extend("Bloopa",{//calamar
     });
     this.on("bump.bottom",function(collision) {
       this.p.vy = -100;
+      this.play("up");
     });
   },
   die: function(){
@@ -605,6 +630,10 @@ Q.scene("HUD",function(stage) {
   var lifePoints = Q.state.get("lifePoints");
   var life =new Q.UI.Text({x:110, y: 70, label: "Life points: "+ lifePoints, color: "#ffc600", outlineWidth: 3, outline: "#ff7200"});
   stage.insert(life);
+
+  var hint = Q.state.get("hint");
+  var help =new Q.UI.Text({x: Q.width/2, y: 20, label: hint, color: "#ffc600", outlineWidth: 3, outline: "#ff7200"});
+  stage.insert(help);
 });
 
 
@@ -648,7 +677,14 @@ Q.scene("level1",function(stage) {
       var goomba = stage.insert(new Q.Goomba(1750, 320));
       var goomba = stage.insert(new Q.Goomba(1850, 320));
 
-      var goomba = stage.insert(new Q.Goomba(2150, 320));
+      var goomba = stage.insert(new Q.Goomba(2400, 520));
+      var goomba = stage.insert(new Q.Goomba(2450, 520));
+
+      var thunder3 = stage.insert(new Q.Thunder(2638, 250));
+
+      var goomba = stage.insert(new Q.Goomba(3950, 530));
+      var goomba = stage.insert(new Q.Goomba(3970, 520));
+      var goomba = stage.insert(new Q.Goomba(3990, 520));
 
       var princess=stage.insert(new Q.Princess());
 
@@ -673,7 +709,7 @@ Q.scene('endGame',function(stage) {
   button.on("click",function() {
     Q.clearStages();
     Q.audio.stop();
-    Q.state.reset({score: 0, hammer: " ", game: "playing", lifePoints: 5});
+    Q.state.reset({score: 0, hammer: " ", game: "playing", lifePoints: 5, hint: "Hint: find the power of the Gods"});
     //Q.audio.play('music_main.mp3',{ loop: true });
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
@@ -688,10 +724,17 @@ Q.scene('menu',function(stage) {
   }));
 
   var button = container.insert(new Q.UI.Button({ x: 0, y: 0, fill: "#CCCCCC", w:Q.width, h:Q.height, asset:"mainTitle.png" })); 
-  
+  /*
+  this.on("confirm", function(){
+    Q.clearStages();
+    Q.state.reset({score: 0, hammer: " ", game: "playing", lifePoints: 5, hint: "Hint: find the power of the Gods"});
+    Q.stageScene('level1', 0);
+    Q.stageScene('HUD', 1);
+  });*/
+
   button.on("click",function() {
     Q.clearStages();
-    Q.state.reset({score: 0, hammer: " ", game: "playing", lifePoints: 5});
+    Q.state.reset({score: 0, hammer: " ", game: "playing", lifePoints: 5, hint: "Hint: find the power of the Gods"});
     Q.stageScene('level1', 0);
     Q.stageScene('HUD', 1);
   });
