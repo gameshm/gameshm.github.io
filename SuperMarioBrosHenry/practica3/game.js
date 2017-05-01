@@ -59,7 +59,7 @@ Q.animations("prost_anim_big", {
 
 Q.animations("bloopa_anim", {
   stand: { frames: [0], rate: 1/10, flip: false}, 
-  up: { frames: [1,1], rate: 2/10, flip:false, next: "stand"}, 
+  up: { frames: [1], rate: 1/10, flip:false, next: "stand"}, 
   down: { frames: [2], rate: 1/10, flip: false }
 });
 
@@ -477,16 +477,19 @@ Q.Sprite.extend("Hammer", {
     this.p.sensor=true;
     this.p.h = 16;
     this.on("bump.top, bump.right, bump.bottom, bump.left", function(collision){
+      // Si se choca con algún bicho malo y Prost lo acaba de lanzar
       if((collision.obj.isA("Goomba") || collision.obj.isA("Bloopa")) && this.p.stage == "going") { 
           collision.obj.die();
           this.play("hit");
           Q.audio.play("metalBang.mp3");
       }
+      // Si está volviendo a Prost y llega
       if(collision.obj.isA("Prost") && this.p.stage == "returning") { 
           this.die();
           collision.obj.retrieveHammer();
       }
     });
+    // Si se choca con cualquier cosa por la derecha o la izquierda (p.e: pared), vuelve
     this.on("bump.right, bump.left", function(collision){
       if(this.p.stage == "going"){
           this.p.stage = "returning";
@@ -497,9 +500,10 @@ Q.Sprite.extend("Hammer", {
       }
     });
     var hammer = this;
+    // Para que se destruya si pierdes la partida
     Q.state.on("change.game", function(){
       if(Q.state.get("game") == "lost"){
-        hammer.destroy();
+        hammer.die();
       }
     });
   },
@@ -509,6 +513,7 @@ Q.Sprite.extend("Hammer", {
   },
 
   step: function(dt){
+    // Vamos contando los "metros" para que vuelva si no se choca con nada (p.e: al lanzarlo al vacío)
     this.p.meters++;
     if(this.p.meters >= 25){ // Si se pasa de rango, hacemos que vuelva a Prost
       var a = (this.p.direction == "right" ? 90 : -90);
@@ -578,12 +583,14 @@ Q.Sprite.extend("Bloopa",{//calamar
       x: paramX,           // You can also set additional properties that can
       y: paramY,           // be overridden on object creation
       vx: 20,
-      gravity: 0.1
+      gravity: 0.1,
+      dead: false
     });
     this.add('2d, animation, aiBounce, defaultEnemy');
     this.on("bump.top",function(collision) {
         if(collision.obj.isA("Mario") || collision.obj.isA("Prost")) {
           this.die();
+          collision.obj.p.vy = -300;
         }
     });
     this.on("bump.bottom",function(collision) {
@@ -596,18 +603,12 @@ Q.Sprite.extend("Bloopa",{//calamar
     this.del('aiBounce');
     this.off("bump.bottom");
     this.p.vx = 0;
+    this.p.dead = true;
     this.del("defaultEnemy");
     //this.animate({ x: this.p.x, y: this.p.y+300, angle: 0 }, 1);
   },
   step: function(dt){
-    if(this.vy>0){
-      this.play("down");
-    }else if(this.vy<0){
-      this.play("up");
-    }else
-      this.play("stand");
-
-    if(this.p.y > 750){
+    if(this.p.y > 750 || (this.p.vy == 0 && this.p.dead)){
       this.destroy();
     }
 }
