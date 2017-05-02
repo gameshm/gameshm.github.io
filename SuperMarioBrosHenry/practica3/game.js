@@ -257,7 +257,7 @@ Q.Sprite.extend("Prost",{
     if(this.p.shape == "humanoid" && this.p.hammer){
       //this.play("throw_" + this.p.direction);
       var vx, dx;
-      var dy = -20;
+      var dy = -30;
       var a;
       if(this.p.direction == "right"){
         vx = 300;
@@ -336,7 +336,7 @@ Q.Sprite.extend("Prost",{
     }    
   },
 
-  coordinates: function(){ // For debug purposes only
+  coordinates: function(){ // For debugging purposes only
     console.log("x: " + this.p.x);
     console.log("y: " + this.p.y);
   }

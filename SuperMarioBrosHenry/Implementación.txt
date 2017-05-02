@@ -1,0 +1,34 @@
+Práctica realizada por Marcos Laina Pérez y Enrique Ituarte Martínez-Millán
+
+Hemos implementado todo lo que se ha pedido de la parte obligatoria.
+
+Luego, hemos decidido cambiar la apariencia del juego:
+- Cambiando a Mario por Prost, el perro de Enrique. Tiene dos estados: forma canina y forma humanoide, cada una con sus propias animaciones.
+	Forma canina: puede correr, saltar y en general hace lo mismo que Mario Small.
+	Forma humanoide: cuando Prost encuentra el poder de los Dioses (ver más abajo) se convierte en humanoide, y gana el poder del martillo de Thor durante
+			alrededor de unos 10 segundos.
+			En esta forma puede además de la versión canina, lanzar el martillo (tecla Espacio). Si el martillo choca con un enemigo, el enemigo muere
+			y el martillo vuelve a Prost. Prost no puede lanzar el martillo hasta que lo recoja. Si el martillo no choca con un enemigo (choca con pared
+			o se le acaba el rango) vuelve a Prost.
+- Cambiando el escenario: 
+	Hemos puesto un Repeater con efecto parallax y hemos creado un escenario nuevo con Tiled. 
+	Hemos intentado que sea un escenario moderadamente difícil, en combinación con la posición de los enemigos y que tenga sentido.
+- Añadiendo efectos de sonido: 
+	Hemos cambiado el sonido de las monedas por un "woof" del perro, algo más sano para los oídos. También hemos quitado la música de fondo por la misma razón.
+	Cuando Prost coge el poder del rayo, suena una música épica durante unos 10 segundos.
+	Cuando Prost vuelve a forma canina, hace un "woof".
+	Cuando se completa el juego, suena otra música épica.
+	Cuando el martillo golpea a un enemigo, suena un sonido metálico.
+- Añadiendo nuevos objetos de Quintus:
+	Thunder (poder de los Dioses). Hemos colocado 3 en el juego en posiciones estratégicas.
+				  Tiene sus propias animaciones.
+				  A la vez sirve de "contador" descendiente, aprovechando la función step para ir cambiando un texto informativo.
+				  Cuando termina el contador, el objeto se elimina.
+	Hammer (martillo). Se crea un martillo cada vez que Prost pulsa la tecla Espacio en forma humanoide (tras coger el poder de los Dioses).
+			   Se lanza en la dirección de Prost, y en este momento se guardan unas coordenadas en la variable state de Quintus, para que pueda volver
+			   al perro una vez golpeado (o no) a un enemigo.
+			   El martillo tiene sus propias animaciones, soltando rayos cada vez que golpea a un enemigo.
+- Textos en HUD:
+	Hint. Es un texto que da pista en torno al poder de los Dioses o al uso del martillo cuando se posee.
+	Score. Recuento de las monedas que Prost lleva recogidas.
+	Life points. Un contador descendiente de 5 vidas. Se pedía en la parte opcional.
